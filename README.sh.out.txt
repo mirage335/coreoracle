@@ -11,7 +11,7 @@ _ Usage _
 __ commKey __
 [0;37;100m[0;34m ./commKey _setup [0m[0m
 
-(run only once to generate keys)
+(run only once to generate directories and some symmetric keys)
 
 
 

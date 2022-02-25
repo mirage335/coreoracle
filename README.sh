@@ -68,7 +68,7 @@ _heading1 'Usage'
 _heading2 'commKey'
 
 _o _messagePlain_probe './commKey _setup'
-_t '(run only once to generate keys)
+_t '(run only once to generate directories and some symmetric keys)
 
 
 
