@@ -1,3 +1,13 @@
+container
+fs/
+temple/
+smoke/
+pyre/
+
+
+
+
+
 
 _index
 _local/*
@@ -27,6 +37,8 @@ ubiquitous_bash_compressed.sh
 
 
 /ops
+
+.pidlist*
 
 _arc/
 
@@ -154,6 +166,34 @@ awkvars.out
 
 **/.java
 **/.oracle_jre*
+
+**/home/.pki
+**/home/.nv
+
+**/home/.Xauthority
+**/home/.bash_history
+**/home/.bashrc
+**/home/.gitconfig
+**/home/.ssh
+**/home/.ubcore
+**/home/Desktop
+**/home/Documents
+**/home/Downloads
+**/home/Music
+**/home/Pictures
+**/home/Public
+**/home/Templates
+**/home/Videos
+**/home/bin
+**/home/core
+**/home/project
+**/home/projects
+**/home/realHome
+
+**/home/.java
+**/home/.oracle_jre*
+
+
 
 _local/h/.arduino15/staging/
 

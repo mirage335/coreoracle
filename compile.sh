@@ -32,7 +32,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='1891409836'
-export ub_setScriptChecksum_contents='1743676729'
+export ub_setScriptChecksum_contents='1184206351'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -609,6 +609,33 @@ _____special_live_dent_restore() {
 
 
 #Override (Program).
+_start_prog() {
+	umask 077
+	
+	stty -echo > /dev/null 2>&1
+	
+	#[[ "$varStore" != "" ]] && [[ -e "$varStore" ]] && . "$varStore"
+	
+}
+
+_stop_prog() {
+	stty echo > /dev/null 2>&1
+}
+
+_prepare_prog() {
+	mkdir -p -m 700 "$dataDir"
+	chmod 700 "$dataDir"
+	mkdir -p -m 700 "$safeTmp"
+	chmod 700 "$safeTmp"
+	mkdir -p -m 700 "$fileDir"
+	chmod 700 "$fileDir"
+	
+	mkdir -p -m 700 "$shortTmp"
+	chmod 700 "$shortTmp"
+	
+	#mkdir -p -m 700 "$pack"
+	#chmod 700 "$pack"
+}
 
 #Override, cygwin.
 
@@ -4311,6 +4338,17 @@ export tmpSelf=""
 # ATTENTION: CAUTION: Should only be used by a single unusual Cygwin override. Must be reset if used for any other purpose.
 #export descriptiveSelf=""
 
+export oracleTmp="smoke"
+export tmpPrefix=/"$oracleTmp"
+
+export uidLengthPrefix="26"
+
+# ATTENTION: Overload with "core.sh" or similar if appropriate.
+# WARNING: Any "$tmpPrefix" will be reset before metaengine unless explicitly declared here.
+_set_me_host_prefix() {
+	export metaPrefix=/"$oracleTmp"
+}
+
 #####Global variables.
 #Fixed unique identifier for ubiquitous bash created global resources, such as bootdisc images to be automaticaly mounted by guests. Should NEVER be changed.
 export ubiquitiousBashIDnano=uk4u
@@ -5701,6 +5739,31 @@ _deps_calculators() {
 #}
 
 
+_deps_commKey() {
+	_deps_channel
+		
+	_deps_metaengine
+	
+	export enUb_oracle_commKey="true"
+}
+
+_deps_fragKey() {
+	_deps_channel
+	
+	_deps_metaengine
+	
+	
+	_deps_mount
+	_deps_notLean
+	_deps_image
+	
+	_deps_git
+	_deps_bup
+	
+	export enUb_oracle_fragKey="true"
+}
+
+
 _generate_bash() {
 	
 	_findUbiquitous
@@ -6047,21 +6110,26 @@ CZXWXcRMTo8EmM8i4d
 
 
 _generate_compile_bash_prog() {
-	"$scriptAbsoluteLocation" _true
-	
-	return
-	
 	rm "$scriptAbsoluteFolder"/ubiquitous_bash.sh
 	
 	#"$scriptAbsoluteLocation" _compile_bash cautossh cautossh
 	#"$scriptAbsoluteLocation" _compile_bash lean lean.sh
 	
-	"$scriptAbsoluteLocation" _compile_bash core ubiquitous_bash.sh
+	#"$scriptAbsoluteLocation" _compile_bash core ubiquitous_bash.sh
 	
 	#"$scriptAbsoluteLocation" _compile_bash "" ""
 	#"$scriptAbsoluteLocation" _compile_bash ubiquitous_bash ubiquitous_bash.sh
 	
 	#"$scriptAbsoluteLocation" _package
+	
+	#"$scriptAbsoluteLocation" _compile_bash oracle oracle
+	#chmod 700 "$scriptAbsoluteFolder"/oracle
+	
+	"$scriptAbsoluteLocation" _compile_bash commKey commKey
+	chmod 700 "$scriptAbsoluteFolder"/commKey
+	
+	"$scriptAbsoluteLocation" _compile_bash fragKey fragKey
+	chmod 700 "$scriptAbsoluteFolder"/fragKey
 }
 
 #Default is to include all, or run a specified configuration. For this reason, it will be more typical to override this entire function, rather than append any additional code.
@@ -7166,7 +7234,47 @@ _compile_bash() {
 }
 
 _compile_bash_deps_prog() {
-	true
+	if [[ "$1" == "oracle" ]]
+	then
+		_deps_commKey
+		
+		_deps_channel
+		
+		_deps_metaengine
+		
+		return 0
+	fi
+	
+	if [[ "$1" == "commKey" ]]
+	then
+		_deps_commKey
+		
+		_deps_channel
+		
+		_deps_metaengine
+		
+		return 0
+	fi
+	
+	if [[ "$1" == "fragKey" ]]
+	then
+		_deps_fragKey
+		
+		_deps_channel
+		
+		_deps_metaengine
+		
+		
+		_deps_mount
+		_deps_notLean
+		_deps_image
+		
+		_deps_git
+		_deps_bup
+		
+		
+		return 0
+	fi
 }
 
 #Default is to include all, or run a specified configuration. For this reason, it will be more typical to override this entire function, rather than append any additional code.
@@ -7274,12 +7382,65 @@ _compile_bash_installation_prog() {
 
 _compile_bash_program_prog() {	
 	export includeScriptList
-	true
+	
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_vars.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_object.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_chain.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_counter.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_client.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/diag/"_commKey_query.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_file_salts.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_file.sh )
+	#[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_format.sh )
+	#[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_safety.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_vars.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_volume.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_management_key.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_management_volume.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_swap.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_direct.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_special.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_distributed.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_flexible.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey.sh )
+	
+	#includeScriptList+=( "oracle/composite/volumeKey" )
+	
+	includeScriptList+=( "oracle/composite/"_vectortime.sh )
+	includeScriptList+=( "oracle/composite/"_reseed.sh )
+	includeScriptList+=( "oracle/composite/"_entropy.sh )
+	includeScriptList+=( "oracle/composite/"_sweep.sh )
+	
+	
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/interpreter/"_interpreter_filter.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/interpreter/"_interpreter_object.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/interpreter/"_interpreter_log.sh )
+	
+	
+	includeScriptList+=( "oracle/diag/"_scope.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/diag/"_query.sh )
+	
+	
+	includeScriptList+=( "oracle/wrapper/"_openssl.sh )
+	includeScriptList+=( "oracle/wrapper/"_php_crypto.sh )
+	
+	
+	
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/"override_commKey.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/"override_fragKey.sh )
 }
 
-_compile_bash_config_prog() {	
+_compile_bash_config_prog() {
 	export includeScriptList
-	true
+	
+	includeScriptList+=( "_config/"cryptovars.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "_config/fragKey/"cryptovars_fragKey.sh )
 }
 
 _compile_bash_selfHost_prog() {	

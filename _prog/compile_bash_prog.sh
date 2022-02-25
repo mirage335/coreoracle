@@ -1,5 +1,45 @@
 _compile_bash_deps_prog() {
-	true
+	if [[ "$1" == "oracle" ]]
+	then
+		_deps_commKey
+		
+		_deps_channel
+		
+		_deps_metaengine
+		
+		return 0
+	fi
+	
+	if [[ "$1" == "commKey" ]]
+	then
+		_deps_commKey
+		
+		_deps_channel
+		
+		_deps_metaengine
+		
+		return 0
+	fi
+	
+	if [[ "$1" == "fragKey" ]]
+	then
+		_deps_fragKey
+		
+		_deps_channel
+		
+		_deps_metaengine
+		
+		
+		_deps_mount
+		_deps_notLean
+		_deps_image
+		
+		_deps_git
+		_deps_bup
+		
+		
+		return 0
+	fi
 }
 
 #Default is to include all, or run a specified configuration. For this reason, it will be more typical to override this entire function, rather than append any additional code.
@@ -107,12 +147,65 @@ _compile_bash_installation_prog() {
 
 _compile_bash_program_prog() {	
 	export includeScriptList
-	true
+	
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_vars.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_object.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_chain.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_counter.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey_client.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/"_commKey.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/composite/commKey/diag/"_commKey_query.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_file_salts.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_file.sh )
+	#[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_format.sh )
+	#[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_safety.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_vars.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_volume.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_management_key.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_management_volume.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey_swap.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_direct.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_special.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_distributed.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/_sub/"_fragKey_flexible.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/composite/fragKey/"_fragKey.sh )
+	
+	#includeScriptList+=( "oracle/composite/volumeKey" )
+	
+	includeScriptList+=( "oracle/composite/"_vectortime.sh )
+	includeScriptList+=( "oracle/composite/"_reseed.sh )
+	includeScriptList+=( "oracle/composite/"_entropy.sh )
+	includeScriptList+=( "oracle/composite/"_sweep.sh )
+	
+	
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/interpreter/"_interpreter_filter.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/interpreter/"_interpreter_object.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/interpreter/"_interpreter_log.sh )
+	
+	
+	includeScriptList+=( "oracle/diag/"_scope.sh )
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/diag/"_query.sh )
+	
+	
+	includeScriptList+=( "oracle/wrapper/"_openssl.sh )
+	includeScriptList+=( "oracle/wrapper/"_php_crypto.sh )
+	
+	
+	
+	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/"override_commKey.sh )
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/"override_fragKey.sh )
 }
 
-_compile_bash_config_prog() {	
+_compile_bash_config_prog() {
 	export includeScriptList
-	true
+	
+	includeScriptList+=( "_config/"cryptovars.sh )
+	
+	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "_config/fragKey/"cryptovars_fragKey.sh )
 }
 
 _compile_bash_selfHost_prog() {	
