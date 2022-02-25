@@ -159,19 +159,19 @@ device) this command MUST be run before setting the variable.
 ./fragKey _generate_fragKey_container &lt;bytes&gt;
 
 ./fragKey _generate_fragKey_direct
-./fragKey _deploy_fragKey_direct #&lt;keyID)
+./fragKey _deploy_fragKey_direct #&lt;keyID&gt)
 #Key must be moved, scripted, or deleted.
 
 ./fragKey _generate_fragKey_special
-./fragKey _deploy_fragKey_special #&lt;keyID)
+./fragKey _deploy_fragKey_special #&lt;keyID&gt)
 #Key must be moved, scripted, or deleted.
 
 ./fragKey _generate_fragKey_distributed
-./fragKey _deploy_fragKey_distributed #&lt;keyID)
+./fragKey _deploy_fragKey_distributed #&lt;keyID&gt)
 #Key must be moved, scripted, or deleted.
 
 ./fragKey _generate_fragKey_flexible
-./fragKey _deploy_fragKey_flexible #&lt;keyID)
+./fragKey _deploy_fragKey_flexible #&lt;keyID&gt)
 #Key must be moved, scripted, or deleted.
 
 ./fragKey _purge_fragKey_header
