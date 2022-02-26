@@ -262,7 +262,10 @@ https://en.wikipedia.org/wiki/Rubber-hose_cryptanalysis
 
 
 https://wiki.openssl.org/index.php/Enc
-http://www.bashguru.com/2010/12/math-in-shell-scripts.html'
+http://www.bashguru.com/2010/12/math-in-shell-scripts.html
+
+
+https://github.com/openssl/openssl/issues/10145'
 _t '
 
 
