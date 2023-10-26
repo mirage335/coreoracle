@@ -73,7 +73,19 @@ _openssl_fifo_rand_sequence() {
 	local currentCipher
 	currentCipher="$currentCipherDefault"
 	
-	head -c 48 /dev/urandom | xxd -p | tr -d '\n' | openssl enc -e "$currentCipher" -pass stdin -nosalt -md sha1 -in /dev/zero 2>/dev/null
+	if ! _if_cygwin
+	then
+		head -c 48 /dev/urandom | xxd -p | tr -d '\n' | openssl enc -e "$currentCipher" -pass stdin -nosalt -md sha1 -in /dev/zero 2>/dev/null
+	else
+		# https://stackoverflow.com/questions/3854692/generate-password-in-python
+		python3 <<< '
+import string
+import os
+from os import urandom
+chars = string.ascii_letters + string.digits
+print("".join(chars[c % len(chars)] for c in urandom(48)))
+' | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n' | openssl enc -e "$currentCipher" -pass stdin -nosalt -md sha1 -in /dev/zero 2>/dev/null
+	fi
 	
 	#sleep 0.1
 	#rm -f "$safeTmp"/parallel_fifo > /dev/null 2>&1

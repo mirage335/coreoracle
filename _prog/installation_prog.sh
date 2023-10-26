@@ -65,6 +65,12 @@ _test_prog() {
 	
 	_tryExec "_test_cryptsetup"
 	
+	
+	_tryExec "_test_planKey"
+	
+	_tryExec "_test_pairKey"
+	
+	
 	_messagePASS
 	
 	_tryExec "_vectors_crypto"

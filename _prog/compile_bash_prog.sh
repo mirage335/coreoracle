@@ -1,4 +1,21 @@
 _compile_bash_deps_prog() {
+	if [[ "$1" == "planKey" ]]
+	then
+		_deps_fakehome
+		#_deps_abstractfs
+		
+		_deps_planKey
+		
+		return 0
+	fi
+	
+	if [[ "$1" == "pairKey" ]]
+	then
+		_deps_pairKey
+		
+		return 0
+	fi
+	
 	if [[ "$1" == "oracle" ]]
 	then
 		_deps_commKey

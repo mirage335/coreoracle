@@ -1,14 +1,22 @@
 _gatherEntropy() {
+	_if_cygwin && return 1
+	
 	local gatherEntropySuccess
 	gatherEntropySuccess='false'
+	
 	
 	if ! [[ -w "/dev/random" ]]
 	then
 		return 1
 	fi
 	
-	date +%s%N > /dev/random
-	date +%s%N > /dev/random
+	local currentIteration
+	currentIteration=1
+	for currentIteration in $(seq 3)
+	do
+		date +%s%N > /dev/random
+		date +%s%N > /dev/random
+	done
 	
 	local arecordInstances
 	arecordInstances=$(ps -eo args 2>/dev/null | grep arecord | grep '/dev/random' | wc -l | tr -dc '0-9')
