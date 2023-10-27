@@ -42,11 +42,24 @@ _pair-grab() {
 	sleep 0.1
 	
 	ykman oath accounts code pair-
+	sleep 3
+	sleep 0.1
+	ykman oath accounts code pair-
+	sleep 3
+	sleep 0.1
+	ykman oath accounts code pair-
 	
 }
 
-
-_pair() {
+# NOTICE: Encrypt-and-MAC/Prepend differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
+#  Multi-user pure ciphertext within a noisy channel necessitates search for authentic ciphertext.
+#  By contrast, mere integrity with single shared secret may be better maintained for complicated computer systems by authenticating human readable plaintext.
+_pair-enc() {
+	_start
+	
+	mkfifo "$safeTmp"/keyPipe
+	
+	
 	# encrypt/decrypt (symmetric encryption should also be decryption?)
 	# Encrypt-and-MAC/Prepend
 	# MAC + ciphertext -> rx
@@ -77,9 +90,11 @@ _pair() {
 	
 	# grab ...
 	true
-}
-pair() {
-	_pair "$@"
+	
+	
+	
+	
+	_stop
 }
 
 

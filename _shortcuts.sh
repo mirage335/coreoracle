@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
+_sweep() {
+	"$shortcutsPath_coreoracle" ${FUNCNAME[0]} "$@"
+}
+
+
 _rand() {
-	"$shortcutsPath_coreoracle" _extractEntropy "$@"
+	"$shortcutsPath_coreoracle" ${FUNCNAME[0]} "$@"
 }
 rand() {
 	_rand "$@"
 }
-
 
 
 _pair() {
@@ -16,10 +20,12 @@ pair() {
 	_pair "$@"
 }
 
+
 _plan() {
 	"$shortcutsPath_coreoracle"/planKey "$@"
 }
 plan() {
 	_plan "$@"
 }
+
 
