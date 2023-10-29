@@ -39,10 +39,12 @@ jobs:
           ~/core/infrastructure/ubiquitous_bash/ubiquitous_bash.sh _getMinimal_cloud
         timeout-minutes: 90
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: _getMinimal_cloud
         shell: bash
         run: |
-          ./_lib/ubiquitous_bash.sh _getMinimal_cloud
+          ./_lib/ubiquitous_bash/ubiquitous_bash.sh _getMinimal_cloud
         timeout-minutes: 90
       - name: _setup
         shell: bash
