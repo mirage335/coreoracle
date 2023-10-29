@@ -156,14 +156,21 @@ _pair-enc() {
 	
 	head -c 20 "$HOME"/.pair > "$safeTmp"/keyAuth
 	
-	echo "$current_message" | base64 -d | base64 -d | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p -c 64 | tr -d '\n' | head -c 128 > "$safeTmp"/HMAC-output
+	# Hash everything after expected hash header.
+	echo "$current_message" | base64 -d | base64 -d | tail -c +128 | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
 	
-	if [[ $(cat "$safeTmp"/HMAC-output) == $(echo "$current_message" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9') ]]
+	# If hash of everything after expected hash header... matched header... then decrypt.
+	if [[ $(cat "$safeTmp"/HMAC-output | xxd -p | tr -d '\n') == $(echo "$current_message" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n') ]]
 	then
 		# decrypting
 		true
+	# Else the header did not describe the contents... so encrypt .
 	else
 		# encrypting
+		
+		# Hash entire message, at this point do not skip over nonexistent header .
+		echo "$current_message" | base64 -d | base64 -d | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
+		
 		# DANGER: TODO: OpenSSL may ignore much of the keyfile .
 		echo "$current_message" | base64 -d | base64 -d | openssl enc -e -aes-256-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/HMAC-output -
 	fi
