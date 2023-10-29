@@ -16,9 +16,9 @@ _pair-create() {
 	while read
 	do
 		_messageNormal 'write: YubiKey'
-		ykman oath accounts delete 3/pair- --force 2>/dev/null
-		ykman oath accounts delete pair- --force 2>/dev/null
-		echo "$current_sharedSecret" | ykman oath accounts add --digits 8 --oath-type TOTP --algorithm SHA512 --period 60 pair-
+		ykman oath accounts delete 3/pair-oracle --force 2>/dev/null
+		ykman oath accounts delete pair-oracle --force 2>/dev/null
+		echo "$current_sharedSecret" | ykman oath accounts add --digits 8 --oath-type TOTP --algorithm SHA512 --period 60 pair-oracle
 		[[ "$?" != "0" ]] && _messageFAIL
 		_messagePlain_good 'done: write: YubiKey'
 		_messagePlain_Request 'request: Ctrl+c or connect YubiKey and Enter .'
@@ -27,8 +27,8 @@ _pair-create() {
 	return 0
 }
 
-_pair-grab() {
-	if [[ $(date +%S) -lt 30 ]]
+_pair-grab-stdout() {
+	if [[ $(date +%S) -lt 45 ]]
 	then
 		echo 'wait: '$(bc <<< '60 + '$(date +%S))
 		while ! [[ $(date +%S) -ge 59 ]] ; do sleep 0.3 ; done
@@ -41,14 +41,24 @@ _pair-grab() {
 	fi
 	sleep 0.1
 	
-	ykman oath accounts code pair-
+	ykman oath accounts code pair-oracle
 	sleep 3
 	sleep 0.1
-	ykman oath accounts code pair-
+	ykman oath accounts code pair-oracle
 	sleep 3
 	sleep 0.1
-	ykman oath accounts code pair-
+	ykman oath accounts code pair-oracle
 	
+}
+
+_pair-grab() {
+	echo -n > "$HOME"/.pair
+	chmod 600 "$HOME"/.pair
+	_pair-grab-stdout > "$HOME"/.pair
+}
+
+_pair-purge() {
+	_sweep "$HOME"/.pair
 }
 
 # NOTICE: Encrypt-and-MAC/Prepend differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
