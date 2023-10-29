@@ -10,6 +10,10 @@ _deps_pairKey() {
 	export enUb_oracle_pairKey="true"
 }
 
+_deps_bandKey() {
+	export enUb_oracle_bandKey="true"
+}
+
 _deps_commKey() {
 	_deps_channel
 		

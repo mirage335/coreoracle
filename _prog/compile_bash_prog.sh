@@ -16,6 +16,13 @@ _compile_bash_deps_prog() {
 		return 0
 	fi
 	
+	if [[ "$1" == "bandKey" ]]
+	then
+		_deps_bandKey
+		
+		return 0
+	fi
+	
 	if [[ "$1" == "oracle" ]]
 	then
 		_deps_commKey
@@ -215,6 +222,18 @@ _compile_bash_program_prog() {
 	
 	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/"override_commKey.sh )
 	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/"override_fragKey.sh )
+	
+	
+	
+	
+	
+	[[ "$enUb_oracle_planKey" == "true" ]] && includeScriptList+=( "oracle/composite/planKey/"_planKey.sh )
+	
+	
+	[[ "$enUb_oracle_pairKey" == "true" ]] && includeScriptList+=( "oracle/composite/pairKey/"_pairKey.sh )
+	
+	
+	[[ "$enUb_oracle_bandKey" == "true" ]] && includeScriptList+=( "oracle/composite/bandKey/"_bandKey.sh )
 }
 
 _compile_bash_config_prog() {

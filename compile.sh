@@ -36,7 +36,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='2591634041'
-export ub_setScriptChecksum_contents='1726753287'
+export ub_setScriptChecksum_contents='888132591'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -6318,6 +6318,10 @@ _deps_pairKey() {
 	export enUb_oracle_pairKey="true"
 }
 
+_deps_bandKey() {
+	export enUb_oracle_bandKey="true"
+}
+
 _deps_commKey() {
 	_deps_channel
 		
@@ -6806,6 +6810,9 @@ _generate_compile_bash_prog() {
 	
 	"$scriptAbsoluteLocation" _compile_bash fragKey fragKey
 	chmod 700 "$scriptAbsoluteFolder"/fragKey
+	
+	"$scriptAbsoluteLocation" _compile_bash bandKey bandKey
+	chmod 700 "$scriptAbsoluteFolder"/bandKey
 	
 	"$scriptAbsoluteLocation" _compile_bash pairKey pairKey
 	chmod 700 "$scriptAbsoluteFolder"/pairKey
@@ -8176,6 +8183,13 @@ _compile_bash_deps_prog() {
 		return 0
 	fi
 	
+	if [[ "$1" == "bandKey" ]]
+	then
+		_deps_bandKey
+		
+		return 0
+	fi
+	
 	if [[ "$1" == "oracle" ]]
 	then
 		_deps_commKey
@@ -8375,6 +8389,18 @@ _compile_bash_program_prog() {
 	
 	[[ "$enUb_oracle_commKey" == "true" ]] && includeScriptList+=( "oracle/"override_commKey.sh )
 	[[ "$enUb_oracle_fragKey" == "true" ]] && includeScriptList+=( "oracle/"override_fragKey.sh )
+	
+	
+	
+	
+	
+	[[ "$enUb_oracle_planKey" == "true" ]] && includeScriptList+=( "oracle/composite/planKey/"_planKey.sh )
+	
+	
+	[[ "$enUb_oracle_pairKey" == "true" ]] && includeScriptList+=( "oracle/composite/pairKey/"_pairKey.sh )
+	
+	
+	[[ "$enUb_oracle_bandKey" == "true" ]] && includeScriptList+=( "oracle/composite/bandKey/"_bandKey.sh )
 }
 
 _compile_bash_config_prog() {

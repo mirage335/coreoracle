@@ -20,6 +20,9 @@ _generate_compile_bash_prog() {
 	"$scriptAbsoluteLocation" _compile_bash fragKey fragKey
 	chmod 700 "$scriptAbsoluteFolder"/fragKey
 	
+	"$scriptAbsoluteLocation" _compile_bash bandKey bandKey
+	chmod 700 "$scriptAbsoluteFolder"/bandKey
+	
 	"$scriptAbsoluteLocation" _compile_bash pairKey pairKey
 	chmod 700 "$scriptAbsoluteFolder"/pairKey
 	
