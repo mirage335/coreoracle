@@ -32,7 +32,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='1891409836'
-export ub_setScriptChecksum_contents='1184206351'
+export ub_setScriptChecksum_contents='2308247772'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -5739,6 +5739,18 @@ _deps_calculators() {
 #}
 
 
+
+_deps_planKey() {
+	_deps_fakehome
+	#_deps_abstractfs
+	
+	export enUb_oracle_planKey="true"
+}
+
+_deps_pairKey() {
+	export enUb_oracle_pairKey="true"
+}
+
 _deps_commKey() {
 	_deps_channel
 		
@@ -6130,6 +6142,12 @@ _generate_compile_bash_prog() {
 	
 	"$scriptAbsoluteLocation" _compile_bash fragKey fragKey
 	chmod 700 "$scriptAbsoluteFolder"/fragKey
+	
+	"$scriptAbsoluteLocation" _compile_bash pairKey pairKey
+	chmod 700 "$scriptAbsoluteFolder"/pairKey
+	
+	"$scriptAbsoluteLocation" _compile_bash planKey planKey
+	chmod 700 "$scriptAbsoluteFolder"/planKey
 }
 
 #Default is to include all, or run a specified configuration. For this reason, it will be more typical to override this entire function, rather than append any additional code.
@@ -7234,6 +7252,23 @@ _compile_bash() {
 }
 
 _compile_bash_deps_prog() {
+	if [[ "$1" == "planKey" ]]
+	then
+		_deps_fakehome
+		#_deps_abstractfs
+		
+		_deps_planKey
+		
+		return 0
+	fi
+	
+	if [[ "$1" == "pairKey" ]]
+	then
+		_deps_pairKey
+		
+		return 0
+	fi
+	
 	if [[ "$1" == "oracle" ]]
 	then
 		_deps_commKey

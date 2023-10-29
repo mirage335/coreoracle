@@ -32,7 +32,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='1891409836'
-export ub_setScriptChecksum_contents='3454425156'
+export ub_setScriptChecksum_contents='2815647194'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -18126,6 +18126,12 @@ _test_prog() {
 	
 	_tryExec "_test_cryptsetup"
 	
+	
+	_tryExec "_test_planKey"
+	
+	_tryExec "_test_pairKey"
+	
+	
 	_messagePASS
 	
 	_tryExec "_vectors_crypto"
@@ -19774,16 +19780,24 @@ _get_vectortime_local() {
 
 
 _gatherEntropy() {
+	_if_cygwin && return 1
+	
 	local gatherEntropySuccess
 	gatherEntropySuccess='false'
+	
 	
 	if ! [[ -w "/dev/random" ]]
 	then
 		return 1
 	fi
 	
-	date +%s%N > /dev/random
-	date +%s%N > /dev/random
+	local currentIteration
+	currentIteration=1
+	for currentIteration in $(seq 3)
+	do
+		date +%s%N > /dev/random
+		date +%s%N > /dev/random
+	done
 	
 	local arecordInstances
 	arecordInstances=$(ps -eo args 2>/dev/null | grep arecord | grep '/dev/random' | wc -l | tr -dc '0-9')
@@ -19989,7 +20003,19 @@ _openssl_fifo_rand_sequence() {
 	local currentCipher
 	currentCipher="$currentCipherDefault"
 	
-	head -c 48 /dev/urandom | xxd -p | tr -d '\n' | openssl enc -e "$currentCipher" -pass stdin -nosalt -md sha1 -in /dev/zero 2>/dev/null
+	if ! _if_cygwin
+	then
+		head -c 48 /dev/urandom | xxd -p | tr -d '\n' | openssl enc -e "$currentCipher" -pass stdin -nosalt -md sha1 -in /dev/zero 2>/dev/null
+	else
+		# https://stackoverflow.com/questions/3854692/generate-password-in-python
+		python3 <<< '
+import string
+import os
+from os import urandom
+chars = string.ascii_letters + string.digits
+print("".join(chars[c % len(chars)] for c in urandom(48)))
+' | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n' | openssl enc -e "$currentCipher" -pass stdin -nosalt -md sha1 -in /dev/zero 2>/dev/null
+	fi
 	
 	#sleep 0.1
 	#rm -f "$safeTmp"/parallel_fifo > /dev/null 2>&1
