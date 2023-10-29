@@ -1,0 +1,56 @@
+
+# WARNING: May be untested .
+
+name: test
+on:
+  push:
+  workflow_dispatch:
+  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+  schedule:
+    #- cron: '5 1 * * 6'
+    #- cron: '5 1 * * 2,4'
+    #- cron: '5 1 * * 2'
+    #- cron: '5 1 * * 4'
+    - cron: '5 1 * * 5'
+
+# https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test_latest:
+    runs-on: ubuntu-latest
+    #runs-on: ubuntu-20.04
+    #runs-on: ubuntu-18.04
+    steps:
+      - name: _getCore_ub
+        shell: bash
+        timeout-minutes: 90
+        run: |
+          mkdir -p ~/core/infrastructure
+          cd ~/core/infrastructure
+          git clone --depth 1 --recursive https://github.com/mirage335/ubiquitous_bash.git
+          cd ubiquitous_bash
+          ./_setupUbiquitous.bat
+      - name: _getMinimal_cloud
+        shell: bash
+        run: |
+          ~/core/infrastructure/ubiquitous_bash/ubiquitous_bash.sh _getMinimal_cloud
+        timeout-minutes: 90
+      - uses: actions/checkout@v3
+      - name: _getMinimal_cloud
+        shell: bash
+        run: |
+          ./_lib/ubiquitous_bash.sh _getMinimal_cloud
+        timeout-minutes: 90
+      - name: _setup
+        shell: bash
+        run: |
+          ./commKey _setup
+      - name: _query_search
+        shell: bash
+        run: |
+          echo -n BASH_echo PASS | ./commKey _query_search
+
+
