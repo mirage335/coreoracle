@@ -1,12 +1,13 @@
 
 # NOTICE: Legacy. Configures and uses YubiKey OAUTH to generate matching time dependent passwords .
-# DANGER: Safe (including some, but only some, post-quantum safety). Short-term integrity (ie.  SHA3-256 length extension resistance vs. HMAC) was prioritized, confidentiality is only short-term (ie. AES-128-CFB).
+# DANGER: Safe (including some, but only some, post-quantum safety). Short-term integrity (ie.  SHA3-256 length extension resistance vs. HMAC, human readable Encrypt-and-MAC) was prioritized, confidentiality is only short-term (ie. AES-128-CFB1). Key reuse may result in some revealing patterns (eg. sending the same information multiple times).
 #  DANGER: There are *very* good technical reasons for these tradeoffs. Do not tinker with such algorithms unless you really know what you are doing.
 #   DANGER: Especially do not add predictable or unnecessary output (eg. do NOT salt, do NOT prepend predictable headers).
+#   DANGER: Some aspects of software simplicity are a deliberate goal, appropriately prioritized (eg. no salt). Software issues are considered much more likely and much more catastrophic to integrity, than some loss of confidentiality.
 #  Good use case is transfer of software packages, with credentials, for installation, to an offline computer. Malware installed to the offline computer would be devastating, whereas partial loss of confidentiality would only affect credentials that were completely compromised soon enough.
 #  Another good use case is transfer of malware analysis out of or across separate network computers for public release or more analysis. Malware persisting with unanalyzed code on the separate network computer could reinfect the definitions, whereas loss of confidentiality may probably not be timely or complete enough for that to significantly reduce disinfection effectiveness.
 # WARNING: Algorims here, even for the reference implementation, may change, as expected uses are ephemeral, invalidating old data.
-# ATTENTION: All that said, this is very, very safe. The algorithms used, and the way these are used, is believed very, very, safe. Any issues are very highly theoretical. You have far more to worry about from malware, etc.
+# ATTENTION: All that said, this is safe. You have far more to worry about from malware, etc.
 
 
 _pair-generate() {
@@ -153,11 +154,17 @@ _current_message-toBin() {
 
 
 
+# https://en.wikipedia.org/wiki/HMAC
+#  'The Keccak hash function, that was selected by NIST as the SHA-3 competition winner, doesn't need this nested approach and can be used to generate a MAC by simply prepending/appending the key to the message, as it is not susceptible to length-extension attacks.'
+# https://en.wikipedia.org/wiki/Authenticated_encryption
+#  'Encrypt-and-MAC' ... Same key is used.
 _pair-mac() {
 	cat "$HOME"/.pair-keyAuth - | openssl dgst -sha3-256 -binary | head -c32
 }
 
+# https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
 _pair-enc() {
+	# Do NOT use 'ctr' , 'ofb' , etc - absolutely unsafe , much worse than ecb .
 	#openssl enc -e -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 	#openssl enc -e -aes-128-cfb -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 	
@@ -438,18 +445,6 @@ _pair() {
 
 
 
-
-# NOTICE: Encrypt-and-MAC differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
-#  Multi-user pure ciphertext within a noisy channel necessitates search for authentic ciphertext.
-#  By contrast, mere integrity with single shared secret may be better maintained for complicated computer systems by authenticating human readable plaintext.
-# ATTENTION: Structure is deliberately chosen to prioritize integrty through minimal processing and human readability. Thus, the structure, using Keccak instead of HMAC, and using Encrypt-and-MAC, has been deliberately chosen to use only the OpenSSL program (NOT php), and to allow manual checking from other computers (at least of a sample).
-#  DANGER: As usual, think very carefully about the structure before revising the algorithm.
-# https://en.wikipedia.org/wiki/HMAC
-#  'The Keccak hash function, that was selected by NIST as the SHA-3 competition winner, doesn't need this nested approach and can be used to generate a MAC by simply prepending/appending the key to the message, as it is not susceptible to length-extension attacks.'
-# https://en.wikipedia.org/wiki/Authenticated_encryption
-#  'Encrypt-and-MAC' ... Same key is used.
-# https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
-#  
 
 
 
