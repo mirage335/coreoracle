@@ -253,28 +253,28 @@ _pair-emit_sequence() {
 	local currentMessageSimple
 	currentMessageSimple=$(_current_message-toSimple)
 	
-	_messageNormal '_pair-emit' > _pair-logTTY
+	_messageNormal '_pair-emit' | _pair-logTTY
 	
 	echo "$currentMessageSimple" | _pair-mac_received-hex > "$safeTmp"/hmac_received.hex
 	
-	_messagePlain_probe '"$safeTmp"/hmac_received.hex' > _pair-logTTY
-	cat "$safeTmp"/hmac_received.hex > _pair-logTTY
-	echo > _pair-logTTY
+	_messagePlain_probe '"$safeTmp"/hmac_received.hex' | _pair-logTTY
+	cat "$safeTmp"/hmac_received.hex | _pair-logTTY
+	echo | _pair-logTTY
 	
 	echo "$currentMessageSimple" | _pair-mac_received_fromRH-hex > "$safeTmp"/hmac_received_fromRH.hex
 	cat "$safeTmp"/hmac_received_fromRH.hex > "$safeTmp"/hmac_received_fromRHofB64ofE.hex
 	
-	_messagePlain_probe '"$safeTmp"/hmac_received_fromRH.hex' > _pair-logTTY
-	cat "$safeTmp"/hmac_received_fromRH.hex > _pair-logTTY
-	echo > _pair-logTTY
+	_messagePlain_probe '"$safeTmp"/hmac_received_fromRH.hex' | _pair-logTTY
+	cat "$safeTmp"/hmac_received_fromRH.hex | _pair-logTTY
+	echo | _pair-logTTY
 	
 	
 	
 	echo "$currentMessageSimple" | _pair-mac_calculated-hex > "$safeTmp"/hmac_calculated.hex
 	
-	_messagePlain_probe '"$safeTmp"/hmac_calculated.hex' > _pair-logTTY
-	cat "$safeTmp"/hmac_calculated.hex > _pair-logTTY
-	echo > _pair-logTTY
+	_messagePlain_probe '"$safeTmp"/hmac_calculated.hex' | _pair-logTTY
+	cat "$safeTmp"/hmac_calculated.hex | _pair-logTTY
+	echo | _pair-logTTY
 	
 	
 	
@@ -282,18 +282,18 @@ _pair-emit_sequence() {
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-hex > "$safeTmp"/hmac_calculated_fromRH.hex
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-bin > "$safeTmp"/hmac_calculated_fromRH.bin
 	
-	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' > _pair-logTTY
-	cat "$safeTmp"/hmac_calculated_fromRH.hex > _pair-logTTY
-	echo > _pair-logTTY
+	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' | _pair-logTTY
+	cat "$safeTmp"/hmac_calculated_fromRH.hex | _pair-logTTY
+	echo | _pair-logTTY
 	
 	
 	
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRHofB64ofE-hex > "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRHofB64ofE-bin > "$safeTmp"/hmac_calculated_fromRHofB64ofE.bin
 	
-	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRHofB64ofE.hex' > _pair-logTTY
-	cat "$safeTmp"/hmac_calculated_fromRH.hex > _pair-logTTY
-	echo > _pair-logTTY
+	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRHofB64ofE.hex' | _pair-logTTY
+	cat "$safeTmp"/hmac_calculated_fromRH.hex | _pair-logTTY
+	echo | _pair-logTTY
 	
 	
 	
@@ -301,25 +301,25 @@ _pair-emit_sequence() {
 	echo "$currentMessageSimple" | _pair-mac_generated-hex > "$safeTmp"/hmac_generated.hex
 	echo "$currentMessageSimple" | _pair-mac_generated-bin > "$safeTmp"/hmac_generated.bin
 	
-	_messagePlain_probe '"$safeTmp"/hmac_generated.hex' > _pair-logTTY
-	cat "$safeTmp"/hmac_generated.hex > _pair-logTTY
-	echo > _pair-logTTY
+	_messagePlain_probe '"$safeTmp"/hmac_generated.hex' | _pair-logTTY
+	cat "$safeTmp"/hmac_generated.hex | _pair-logTTY
+	echo | _pair-logTTY
 	
 	
 	if [[ $(cat "$safeTmp"/hmac_received.hex) == $(cat "$safeTmp"/hmac_calculated.hex) ]]
 	then
-		_messagePlain_nominal 'decrypt' > _pair-logTTY
-		_messagePlain_good 'good: decrypt: hmac: bin' > _pair-logTTY
+		_messagePlain_nominal 'decrypt' | _pair-logTTY
+		_messagePlain_good 'good: decrypt: hmac: bin' | _pair-logTTY
 		# decryption
 		echo "$currentMessageSimple" | _current_message-toBin | head -c-32 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
 	elif [[ $(cat "$safeTmp"/hmac_received_fromRH.hex) == $(cat "$safeTmp"/hmac_calculated_fromRH.hex) ]]
 	then
-		#_messagePlain_nominal 'authenticate' > _pair-logTTY
-		#_messagePlain_good 'good: authOnly: hmac: rawHex' > _pair-logTTY
+		#_messagePlain_nominal 'authenticate' | _pair-logTTY
+		#_messagePlain_good 'good: authOnly: hmac: rawHex' | _pair-logTTY
 		#echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
 		
-		_messagePlain_nominal 'encrypt' > _pair-logTTY
-		_messagePlain_good 'good: authOnly: hmac: rawHex' > _pair-logTTY
+		_messagePlain_nominal 'encrypt' | _pair-logTTY
+		_messagePlain_good 'good: authOnly: hmac: rawHex' | _pair-logTTY
 		if [[ "$FORCE_PURE" == "true" ]]
 		then
 			echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-encrypt | cat - "$safeTmp"/hmac_calculated_fromRH.bin
@@ -328,18 +328,18 @@ _pair-emit_sequence() {
 		fi
 	elif [[ $(cat "$safeTmp"/hmac_received_fromRHofB64ofE.hex) == $(cat "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex) ]]
 	then
-		_messagePlain_nominal 'decrypt' > _pair-logTTY
-		_messagePlain_good 'good: hmac: rawHex: ofB64ofE' > _pair-logTTY
+		_messagePlain_nominal 'decrypt' | _pair-logTTY
+		_messagePlain_good 'good: hmac: rawHex: ofB64ofE' | _pair-logTTY
 		#_current_message-toSimple | _pair-encrypt | base64
 		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | base64 -d | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex
 	elif [[ "$FORCE_PURE" == "true" ]]
 	then
-		_messagePlain_nominal 'encrypt: FORCE_PURE' > _pair-logTTY
+		_messagePlain_nominal 'encrypt: FORCE_PURE' | _pair-logTTY
 		# encryption
 		
 		echo "$currentMessageSimple" | _pair-encrypt | cat - "$safeTmp"/hmac_generated.bin
 	else
-		_messagePlain_nominal 'encrypt' > _pair-logTTY
+		_messagePlain_nominal 'encrypt' | _pair-logTTY
 		# encryption
 		
 		echo "$currentMessageSimple" | _pair-encrypt | base64 | cat - "$safeTmp"/hmac_generated.hex
