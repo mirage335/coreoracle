@@ -2,21 +2,13 @@
 # NOTICE: Legacy . Emphasizes integrity by using only GPG . Beware any CVEs against GPG . 
 
 
-# export fake home directory
-
-# fakehome gpg ...
-
-
-
-# openpgp -> yubikey
-
-# public key/recipient list ...
 
 
 
 
-
-
+_plan() {
+	gpg --homedir "$HOME"/.plan "$@"
+}
 
 
 
