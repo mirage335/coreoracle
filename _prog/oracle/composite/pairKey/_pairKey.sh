@@ -1,5 +1,11 @@
 
 # NOTICE: Legacy. Configures and uses YubiKey OAUTH to generate matching time dependent passwords .
+# DANGER: Safe (including some, but only some, post-quantum safety). Short-term integrity (ie.  SHA3-256 length extension resistance vs. HMAC) was prioritized, confidentiality is only short-term (ie. AES-128-CFB).
+#  DANGER: There are *very* good technical reasons for these tradeoffs. Do not tinker with such algorithms unless you really know what you are doing.
+#  Good use case is transfer of software packages, with credentials, for installation, to an offline computer. Malware installed to the offline computer would be devastating, whereas partial loss of confidentiality would only affect credentials that were completely compromised soon enough.
+#  Another good use case is transfer of malware analysis out of or across separate network computers for public release or more analysis. Malware persisting with unanalyzed code on the separate network computer could reinfect the definitions, whereas loss of confidentiality may probably not be timely or complete enough for that to significantly reduce disinfection effectiveness.
+# WARNING: Algorims here, even for the reference implementation, may change, as expected uses are ephemeral, invalidating old data.
+# ATTENTION: All that said, this is very, very safe. The algorithms used, and the way these are used, is believed very, very, safe. Any issues are very highly theoretical. You have far more to worry about from malware, etc.
 
 
 _pair-generate() {
@@ -76,6 +82,9 @@ _pair-grab-stdout() {
 	#fi
 	#sleep 0.1
 	
+	
+	
+	
 	_messagePlain_request 'request: Please confirm presence at YubiKey at the minute.' > /dev/tty
 	while [[ $(date +%S | sed 's/^0//') -gt 0 ]]
 	do
@@ -149,6 +158,8 @@ _pair-header_received-hex() {
 #  'The Keccak hash function, that was selected by NIST as the SHA-3 competition winner, doesn't need this nested approach and can be used to generate a MAC by simply prepending the key to the message, as it is not susceptible to length-extension attacks.'
 # https://en.wikipedia.org/wiki/Authenticated_encryption
 #  'Encrypt-and-MAC' ... Same key is used.
+# https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
+#  
 _pair-enc() {
 	_start
 	
@@ -177,7 +188,7 @@ _pair-enc() {
 	if [[ $(cat "$safeTmp"/HMAC-output | xxd -p | tr -d '\n') == $(echo "$currentMessageSimple" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n') ]]
 	then
 		# decrypting
-		
+		true
 		
 		
 		
@@ -237,6 +248,12 @@ _pair-enc() {
 	_stop
 }
 
+
+
+
+_vector_pairKey() {
+	true
+}
 
 _test_pairKey() {
 	if ! type ykman > /dev/null 2>&1
