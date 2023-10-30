@@ -160,9 +160,10 @@ _pair-mac() {
 _pair-enc() {
 	#openssl enc -e -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 	#openssl enc -e -aes-128-cfb -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
-	#openssl enc -e -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 	
-	openssl enc -e -aes-128-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+	openssl enc -e -aes-128-cfb1 -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+	
+	#openssl enc -e -aes-128-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 }
 
 _pair-encrypt() {
@@ -175,7 +176,7 @@ _pair-decrypt() {
 	#_current_message-toBin | _pair-enc
 	#_current_message-toBin | openssl enc -d -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 	
-	_current_message-toBin | openssl enc -d -aes-128-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+	_current_message-toBin | openssl enc -d -aes-128-cfb1 -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 }
 
 

@@ -84,7 +84,13 @@ jobs:
       - name: _setup
         shell: bash
         run: |
-          ./pairKey _setup
+          ./pairKey _setup'
+      - name: dummyPair
+        shell: bash
+        run: |
+          dd if=/dev/urandom of="$HOME"/.pair bs=1M count=10 iflag=fullblock
+          head -c 20 "$HOME"/.pair > "$HOME"/.pair-keyAuth
+          
       - name: _pair-emit
         shell: bash
         run: |
