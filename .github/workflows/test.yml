@@ -84,15 +84,22 @@ jobs:
       - name: _setup
         shell: bash
         run: |
-          ./pairKey _setup'
+          ./pairKey _setup
       - name: dummyPair
         shell: bash
         run: |
           dd if=/dev/urandom of="$HOME"/.pair bs=1M count=10 iflag=fullblock
           head -c 20 "$HOME"/.pair > "$HOME"/.pair-keyAuth
-          
+      - name: logTTY
+        shell: bash
+        run: |
+          echo '_pair-logTTY() { cat > /dev/tty; }' > ./_local/ops
       - name: _pair-emit
         shell: bash
         run: |
           echo 'the quick brown fox jumps over the lazy dog' | ./pairKey _pair-emit | ./pairKey _pair-emit | ./pairKey _pair-emit | ./pairKey _pair-emit
+      - name: _pair-emit PURE
+        shell: bash
+        run: |
+          export FORCE_PURE=true ; echo 'the quick brown fox jumps over the lazy dog' | ./pairKey _pair-emit | ./pairKey _pair-emit | ./pairKey _pair-emit | ./pairKey _pair-emit
 

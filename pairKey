@@ -36,7 +36,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='2591634041'
-export ub_setScriptChecksum_contents='3850689007'
+export ub_setScriptChecksum_contents='1976092674'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -14284,33 +14284,58 @@ _pair-mac_received_fromRH-hex() {
 }
 
 
+_pair-mac_calculated_fromRHofB64ofE-bin() {
+	_current_message-toBin | head -c-64 | base64 -d 2>/dev/null | _current_message-toSimple | _pair-decrypt | _pair-mac
+}
+
+_pair-mac_calculated_fromRHofB64ofE-hex() {
+	_pair-mac_calculated_fromRHofB64ofE-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-mac_received_fromRHofB64ofE-bin() {
+	_current_message-toBin | tail -c-64
+}
+
+_pair-mac_received_fromRHofB64ofE-hex() {
+	_pair-mac_received_fromRHofB64ofE-bin | tail -c-64 | tr -dc 'a-zA-Z0-9'
+}
+
+
+# ATTENTION: Override with 'ops.sh' .
+_pair-logTTY() {
+	false
+	#cat > /dev/tty
+}
+
+
 _pair-emit_sequence() {
 	_start
 	
 	local currentMessageSimple
 	currentMessageSimple=$(_current_message-toSimple)
 	
-	_messageNormal '_pair-emit' > /dev/tty
+	_messageNormal '_pair-emit' > _pair-logTTY
 	
 	echo "$currentMessageSimple" | _pair-mac_received-hex > "$safeTmp"/hmac_received.hex
 	
-	_messagePlain_probe '"$safeTmp"/hmac_received.hex' > /dev/tty
-	cat "$safeTmp"/hmac_received.hex > /dev/tty
-	echo > /dev/tty
+	_messagePlain_probe '"$safeTmp"/hmac_received.hex' > _pair-logTTY
+	cat "$safeTmp"/hmac_received.hex > _pair-logTTY
+	echo > _pair-logTTY
 	
 	echo "$currentMessageSimple" | _pair-mac_received_fromRH-hex > "$safeTmp"/hmac_received_fromRH.hex
+	cat "$safeTmp"/hmac_received_fromRH.hex > "$safeTmp"/hmac_received_fromRHofB64ofE.hex
 	
-	_messagePlain_probe '"$safeTmp"/hmac_received_fromRH.hex' > /dev/tty
-	cat "$safeTmp"/hmac_received_fromRH.hex > /dev/tty
-	echo > /dev/tty
+	_messagePlain_probe '"$safeTmp"/hmac_received_fromRH.hex' > _pair-logTTY
+	cat "$safeTmp"/hmac_received_fromRH.hex > _pair-logTTY
+	echo > _pair-logTTY
 	
 	
 	
 	echo "$currentMessageSimple" | _pair-mac_calculated-hex > "$safeTmp"/hmac_calculated.hex
 	
-	_messagePlain_probe '"$safeTmp"/hmac_calculated.hex' > /dev/tty
-	cat "$safeTmp"/hmac_calculated.hex > /dev/tty
-	echo > /dev/tty
+	_messagePlain_probe '"$safeTmp"/hmac_calculated.hex' > _pair-logTTY
+	cat "$safeTmp"/hmac_calculated.hex > _pair-logTTY
+	echo > _pair-logTTY
 	
 	
 	
@@ -14318,9 +14343,18 @@ _pair-emit_sequence() {
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-hex > "$safeTmp"/hmac_calculated_fromRH.hex
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-bin > "$safeTmp"/hmac_calculated_fromRH.bin
 	
-	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' > /dev/tty
-	cat "$safeTmp"/hmac_calculated_fromRH.hex > /dev/tty
-	echo > /dev/tty
+	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' > _pair-logTTY
+	cat "$safeTmp"/hmac_calculated_fromRH.hex > _pair-logTTY
+	echo > _pair-logTTY
+	
+	
+	
+	echo "$currentMessageSimple" | _pair-mac_calculated_fromRHofB64ofE-hex > "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex
+	echo "$currentMessageSimple" | _pair-mac_calculated_fromRHofB64ofE-bin > "$safeTmp"/hmac_calculated_fromRHofB64ofE.bin
+	
+	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRHofB64ofE.hex' > _pair-logTTY
+	cat "$safeTmp"/hmac_calculated_fromRH.hex > _pair-logTTY
+	echo > _pair-logTTY
 	
 	
 	
@@ -14328,39 +14362,45 @@ _pair-emit_sequence() {
 	echo "$currentMessageSimple" | _pair-mac_generated-hex > "$safeTmp"/hmac_generated.hex
 	echo "$currentMessageSimple" | _pair-mac_generated-bin > "$safeTmp"/hmac_generated.bin
 	
-	_messagePlain_probe '"$safeTmp"/hmac_generated.hex' > /dev/tty
-	cat "$safeTmp"/hmac_generated.hex > /dev/tty
-	echo > /dev/tty
+	_messagePlain_probe '"$safeTmp"/hmac_generated.hex' > _pair-logTTY
+	cat "$safeTmp"/hmac_generated.hex > _pair-logTTY
+	echo > _pair-logTTY
 	
 	
 	if [[ $(cat "$safeTmp"/hmac_received.hex) == $(cat "$safeTmp"/hmac_calculated.hex) ]]
 	then
-		_messagePlain_nominal 'decrypt' > /dev/tty
-		_messagePlain_good 'good: decrypt: hmac: bin' > /dev/tty
+		_messagePlain_nominal 'decrypt' > _pair-logTTY
+		_messagePlain_good 'good: decrypt: hmac: bin' > _pair-logTTY
 		# decryption
 		echo "$currentMessageSimple" | _current_message-toBin | head -c-32 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
 	elif [[ $(cat "$safeTmp"/hmac_received_fromRH.hex) == $(cat "$safeTmp"/hmac_calculated_fromRH.hex) ]]
 	then
-		#_messagePlain_nominal 'authenticate' > /dev/tty
-		#_messagePlain_good 'good: auth: hmac: rawHex' > /dev/tty
+		#_messagePlain_nominal 'authenticate' > _pair-logTTY
+		#_messagePlain_good 'good: authOnly: hmac: rawHex' > _pair-logTTY
 		#echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
 		
-		_messagePlain_nominal 'encrypt' > /dev/tty
-		_messagePlain_good 'good: auth: hmac: rawHex' > /dev/tty
+		_messagePlain_nominal 'encrypt' > _pair-logTTY
+		_messagePlain_good 'good: authOnly: hmac: rawHex' > _pair-logTTY
 		if [[ "$FORCE_PURE" == "true" ]]
 		then
 			echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-encrypt | cat - "$safeTmp"/hmac_calculated_fromRH.bin
 		else
 			echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-encrypt | base64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
 		fi
+	elif [[ $(cat "$safeTmp"/hmac_received_fromRHofB64ofE.hex) == $(cat "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex) ]]
+	then
+		_messagePlain_nominal 'decrypt' > _pair-logTTY
+		_messagePlain_good 'good: hmac: rawHex: ofB64ofE' > _pair-logTTY
+		#_current_message-toSimple | _pair-encrypt | base64
+		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | base64 -d | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex
 	elif [[ "$FORCE_PURE" == "true" ]]
 	then
-		_messagePlain_nominal 'encrypt: FORCE_PURE' > /dev/tty
+		_messagePlain_nominal 'encrypt: FORCE_PURE' > _pair-logTTY
 		# encryption
 		
 		echo "$currentMessageSimple" | _pair-encrypt | cat - "$safeTmp"/hmac_generated.bin
 	else
-		_messagePlain_nominal 'encrypt' > /dev/tty
+		_messagePlain_nominal 'encrypt' > _pair-logTTY
 		# encryption
 		
 		echo "$currentMessageSimple" | _pair-encrypt | base64 | cat - "$safeTmp"/hmac_generated.hex
@@ -14373,7 +14413,9 @@ _pair-emit() {
 }
 
 
-
+_pair() {
+	_pair-emit "$@"
+}
 
 
 
