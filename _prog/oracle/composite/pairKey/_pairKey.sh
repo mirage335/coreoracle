@@ -215,7 +215,7 @@ _pair-mac_calculated_fromRH-hex() {
 }
 
 _pair-mac_received_fromRH-bin() {
-	_current_message-toBin | tail -c-64
+	_current_message-toBin | tr -d '\n' | tail -c-64
 }
 
 _pair-mac_received_fromRH-hex() {
@@ -224,7 +224,7 @@ _pair-mac_received_fromRH-hex() {
 
 
 _pair-mac_calculated_fromRHofB64ofE-bin() {
-	_current_message-toBin | head -c-64 | base64 -d 2>/dev/null | _current_message-toSimple | _pair-decrypt | _pair-mac
+	_current_message-toBin | tr -d '\n' | head -c-64 | base64 -d 2>/dev/null | _current_message-toSimple | _pair-decrypt | _pair-mac
 }
 
 _pair-mac_calculated_fromRHofB64ofE-hex() {
@@ -331,7 +331,7 @@ _pair-emit_sequence() {
 		_messagePlain_nominal 'decrypt' | _pair-logTTY
 		_messagePlain_good 'good: hmac: rawHex: ofB64ofE' | _pair-logTTY
 		#_current_message-toSimple | _pair-encrypt | base64
-		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | base64 -d | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex
+		echo "$currentMessageSimple" | _current_message-toBin | tr -d '\n' | head -c-64 | base64 -d | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated_fromRHofB64ofE.hex
 	elif [[ "$FORCE_PURE" == "true" ]]
 	then
 		_messagePlain_nominal 'encrypt: FORCE_PURE' | _pair-logTTY
@@ -351,9 +351,72 @@ _pair-emit() {
 	"$scriptAbsoluteLocation" _pair-emit_sequence "$@"
 }
 
+_pair_out() {
+	if [[ "$1" == "" ]]
+	then
+		_messagePlain_bad 'bad: missing: file: '"$1" > /dev/tty
+		return 1
+	fi
+	_messagePlain_nominal '_pair_out' > /dev/tty
+	_messagePlain_request 'request: provide stream, Ctrl+D' > /dev/tty
+	unset FORCE_PURE
+	echo > /dev/tty
+	cat | _pair-emit > "$1"
+	echo > /dev/tty
+	tail -c 64 "$1"
+	echo > /dev/tty
+	truncate --size=-64 "$1"
+	echo > /dev/tty
+}
+
+_pair_in() {
+	
+	if [[ "$1" == "" ]]
+	then
+		_messagePlain_bad 'bad: missing: file: '"$1" > /dev/tty
+		return 1
+	fi
+	clear > /dev/tty
+	_messagePlain_nominal '_pair_in' > /dev/tty
+	unset FORCE_PURE
+	echo > /dev/tty
+	cat "$1" | _pair-emit
+	echo > /dev/tty
+	_messagePlain_request 'request: transfer stream' > /dev/tty
+}
+
+
+_pair_copy() {
+	if [[ "$1" == "" ]]
+	then
+		_messagePlain_bad 'bad: missing: file: '"$1" > /dev/tty
+		return 1
+	fi
+	_messagePlain_nominal '_pair_copy' > /dev/tty
+	
+	cat "$1" | _pair-emit "$@" | tee >(tail -c 64 > /dev/tty) | xclip -in -selection clipboard
+}
+
+_pair_paste() {
+	if [[ "$1" == "" ]]
+	then
+		_messagePlain_bad 'bad: missing: file: '"$1" > /dev/tty
+		return 1
+	fi
+	_messagePlain_nominal '_pair_paste' > /dev/tty
+	
+	xclip -out -selection clipboard | _pair-emit > "$1"
+	tail -c 64 "$1"
+	truncate --size=-64 "$1"
+}
 
 _pair() {
-	_pair-emit "$@"
+	clear > /dev/tty
+	_messagePlain_nominal '_pair' > /dev/tty
+	_messagePlain_request 'request: provide stream, Ctrl+D' > /dev/tty
+	echo > /dev/tty
+	cat | _pair-emit "$@"
+	echo > /dev/tty
 }
 
 
