@@ -2,6 +2,7 @@
 # NOTICE: Legacy. Configures and uses YubiKey OAUTH to generate matching time dependent passwords .
 # DANGER: Safe (including some, but only some, post-quantum safety). Short-term integrity (ie.  SHA3-256 length extension resistance vs. HMAC) was prioritized, confidentiality is only short-term (ie. AES-128-CFB).
 #  DANGER: There are *very* good technical reasons for these tradeoffs. Do not tinker with such algorithms unless you really know what you are doing.
+#   DANGER: Especially do not add predictable or unnecessary output (eg. do NOT salt, do NOT prepend predictable headers).
 #  Good use case is transfer of software packages, with credentials, for installation, to an offline computer. Malware installed to the offline computer would be devastating, whereas partial loss of confidentiality would only affect credentials that were completely compromised soon enough.
 #  Another good use case is transfer of malware analysis out of or across separate network computers for public release or more analysis. Malware persisting with unanalyzed code on the separate network computer could reinfect the definitions, whereas loss of confidentiality may probably not be timely or complete enough for that to significantly reduce disinfection effectiveness.
 # WARNING: Algorims here, even for the reference implementation, may change, as expected uses are ephemeral, invalidating old data.
@@ -119,17 +120,25 @@ _pair-grab() {
 	
 	# ATTENTION: Since pair keys are expected ephemeral, algorithm may change, or may be disregarded, invalidating existing pair keys.
 	_pair-grab-stdout | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | dd of="$HOME"/.pair bs=1M count=10 status=progress iflag=fullblock
+	
+	head -c 20 "$HOME"/.pair > "$HOME"/.pair-keyAuth
 }
 
 _pair-purge() {
-	! [[ -e "$HOME"/.pair ]] && return 0
+	! [[ -e "$HOME"/.pair ]] && ! [[ -e "$HOME"/.pair-keyAuth ]] && return 0
+	
 	_sweep "$HOME"/.pair
+	_sweep "$HOME"/.pair-keyAuth
 }
 
 # ATTENTION: Since pair keys are expected ephemeral, algorithm may change, or may be disregarded, invalidating existing pair keys.
 _pair-summary() {
 	cat "$HOME"/.pair | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | head -c 20
 }
+
+
+
+
 
 
 
@@ -142,112 +151,146 @@ _current_message-toBin() {
 	cat | base64 -d | base64 -d | cat
 }
 
-_pair-header_received-hex() {
-	_current_message-toBin | xxd -p | tr -d '\n'
-	
-	head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n'
+
+
+_pair-mac() {
+	cat "$HOME"/.pair-keyAuth - | openssl dgst -sha3-256 -binary | head -c32
+}
+
+_pair-enc() {
+	#openssl enc -e -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+	#openssl enc -e -aes-128-cfb -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+	openssl enc -e -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+}
+
+_pair-encrypt() {
+	# 128bit block size may reduce effect of corruption
+	# ctr is symmetric (ie. same command to decrypt as to encrypt)
+	# cfb may only be symmetric for first block
+	_current_message-toBin | _pair-enc
+}
+_pair-decrypt() {
+	#_current_message-toBin | _pair-enc
+	_current_message-toBin | openssl enc -d -aes-128-ctr -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 }
 
 
-# NOTICE: Encrypt-and-MAC/Prepend differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
-#  Multi-user pure ciphertext within a noisy channel necessitates search for authentic ciphertext.
-#  By contrast, mere integrity with single shared secret may be better maintained for complicated computer systems by authenticating human readable plaintext.
-# ATTENTION: Structure is deliberately chosen to prioritize integrty through minimal processing and human readability. Thus, the structure, using Keccak instead of HMAC, and using Encrypt-and-MAC/Prepend, has been deliberately chosen to use only the OpenSSL program (NOT php), and to allow manual checking from other computers (at least of a sample).
-#  DANGER: As usual, think very carefully about the structure before revising the algorithm.
-# https://en.wikipedia.org/wiki/HMAC
-#  'The Keccak hash function, that was selected by NIST as the SHA-3 competition winner, doesn't need this nested approach and can be used to generate a MAC by simply prepending the key to the message, as it is not susceptible to length-extension attacks.'
-# https://en.wikipedia.org/wiki/Authenticated_encryption
-#  'Encrypt-and-MAC' ... Same key is used.
-# https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
-#  
-_pair-enc() {
+
+_pair-mac_generated-bin() {
+	_current_message-toBin | _pair-mac
+}
+
+_pair-mac_generated-hex() {
+	_pair-mac_generated-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-mac_calculated-bin() {
+	_current_message-toBin | head -c-32 | _current_message-toSimple | _pair-decrypt | _pair-mac
+}
+
+_pair-mac_calculated-hex() {
+	_pair-mac_calculated-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-mac_calculated_fromRH-bin() {
+	_current_message-toBin | head -c-64 | _current_message-toSimple | _pair-decrypt | _pair-mac
+}
+
+_pair-mac_calculated_fromRH-hex() {
+	_pair-mac_calculated-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-mac_received-bin() {
+	_current_message-toBin | tail -c-32
+}
+
+_pair-mac_received-hex() {
+	_pair-mac_received-bin | _binToHex | tail -c-64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-mac_received-rawHex() {
+	_current_message-toBin | tail -c-64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-emit_sequence() {
 	_start
-	
-	mkfifo "$safeTmp"/key-pipe
-	#_pair-summary > "$safeTmp"/key &
-	
-	
-	# encrypt/decrypt (symmetric encryption should also be decryption?)
-	# Encrypt-and-MAC/Prepend
-	# MAC + ciphertext -> rx
-	# pad (MAC length equivalent, zero values) + plaintext -> tx
-	
-	local currentExitStatus
 	
 	local currentMessageSimple
 	currentMessageSimple=$(_current_message-toSimple)
 	
+	_messageNormal '_pair-emit' > /dev/tty
+	
+	echo "$currentMessageSimple" | tee >(_pair-mac_received-rawHex > "$safeTmp"/hmac_received.rh) | tee >(_pair-mac_received-hex > "$safeTmp"/hmac_received.hex) > /dev/null
+	
+	_messagePlain_probe '"$safeTmp"/hmac_received.rh' > /dev/tty
+	cat "$safeTmp"/hmac_received.rh > /dev/tty
+	echo > /dev/tty
+	
+	_messagePlain_probe '"$safeTmp"/hmac_received.hex' > /dev/tty
+	cat "$safeTmp"/hmac_received.hex > /dev/tty
+	echo > /dev/tty
 	
 	
-	head -c 20 "$HOME"/.pair > "$safeTmp"/keyAuth
 	
-	# Hash everything after expected hash header.
-	echo "$currentMessageSimple" | base64 -d | base64 -d | tail -c +128 | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
+	echo "$currentMessageSimple" | tee >(_pair-mac_calculated-hex > "$safeTmp"/hmac_calculated.hex) > /dev/null
 	
-	# If hash of everything after expected hash header... matched header... then decrypt.
-	if [[ $(cat "$safeTmp"/HMAC-output | xxd -p | tr -d '\n') == $(echo "$currentMessageSimple" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n') ]]
+	_messagePlain_probe '"$safeTmp"/hmac_calculated.hex' > /dev/tty
+	cat "$safeTmp"/hmac_calculated.hex > /dev/tty
+	echo > /dev/tty
+	
+	
+	
+	echo "$currentMessageSimple" | tee >(_pair-mac_calculated_fromRH-hex > "$safeTmp"/hmac_calculated_fromRH.hex) > /dev/null
+	
+	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' > /dev/tty
+	cat "$safeTmp"/hmac_calculated_fromRH.hex > /dev/tty
+	echo > /dev/tty
+	
+	
+	
+	echo "$currentMessageSimple" | tee >(_pair-mac_generated-hex > "$safeTmp"/hmac_generated.hex) | tee >(_pair-mac_generated-bin > "$safeTmp"/hmac_generated.bin) > /dev/null
+	
+	_messagePlain_probe '"$safeTmp"/hmac_generated.hex' > /dev/tty
+	cat "$safeTmp"/hmac_generated.hex > /dev/tty
+	echo > /dev/tty
+	
+	
+	if [[ $(cat "$safeTmp"/hmac_received.hex) == $(cat "$safeTmp"/hmac_calculated.hex) ]]
 	then
-		# decrypting
-		true
-		
-		
-		
-	# Else the header did not describe the contents... so encrypt .
+		_messagePlain_nominal 'decrypt' > /dev/tty
+		_messagePlain_good 'good: decrypt: hmac: bin' > /dev/tty
+		# decryption
+		echo "$currentMessageSimple" | _current_message-toBin | head -c-32 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
+	elif [[ $(cat "$safeTmp"/hmac_received.rh) == $(cat "$safeTmp"/hmac_calculated_fromRH.hex) ]]
+	then
+		_messagePlain_nominal 'decrypt' > /dev/tty
+		_messagePlain_good 'good: decrypt: hmac: hex' > /dev/tty
+		# decryption
+		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
 	else
-		# encrypting
-		
-		# Hash entire message, at this point do not skip over nonexistent header .
-		echo "$currentMessageSimple" | base64 -d | base64 -d | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
-		
-		# DANGER: TODO: OpenSSL may ignore much of the keyfile .
-		echo "$currentMessageSimple" | base64 -d | base64 -d | openssl enc -e -aes-256-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/HMAC-output -
+		_messagePlain_nominal 'encrypt (or exactly symmetric decrypt)' > /dev/tty
+		# encryption
+		echo "$currentMessageSimple" | _pair-encrypt | cat - "$safeTmp"/hmac_generated.bin
 	fi
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	# ATTENTION: scrap
-	
-	
-	#echo "$currentMessageSimple" | base64 -d | base64 -d | tee >(head -c 123 > "$safeTmp"/HMAC-input) | tee >(tail -c+123 | openssl enc | HMAC > "$safeTmp"/HMAC-output)
-	
-	
-	
-	
-	
-	
-	# named pipe for key
-	
-	#echo "$current_message" | base64 -d | base64 -d | tee >(head -c 123 > "$safeTmp"/HMAC-input) | tee >(tail -c+123 | openssl enc | HMAC > "$safeTmp"/HMAC-output)
-	
-	#if "$safeTmp"/HMAC-input == "$safeTmp"/HMAC-output
-		# decrypting
-		#echo "$current_message" | base64 -d | base64 -d | tail -c+123 | openssl enc
-		#currentExitStatus=0
-	
-	#if "$safeTmp"/HMAC-input != "$safeTmp"/HMAC-output
-		# encrypting
-		#current_mac=$(echo "$current_message" | base64 -d | HMAC)
-		#echo "$current_message" | sed 's/^/'"$current_mac"'/' | tail -c+123 | openssl enc | base64
-		#currentExitStatus=10
-	
-	
-	# grab ...
-	true
-	
-	
-	
 	
 	_stop
 }
+_pair-emit() {
+	"$scriptAbsoluteLocation" _pair-emit_sequence "$@"
+}
 
+
+# NOTICE: Encrypt-and-MAC differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
+#  Multi-user pure ciphertext within a noisy channel necessitates search for authentic ciphertext.
+#  By contrast, mere integrity with single shared secret may be better maintained for complicated computer systems by authenticating human readable plaintext.
+# ATTENTION: Structure is deliberately chosen to prioritize integrty through minimal processing and human readability. Thus, the structure, using Keccak instead of HMAC, and using Encrypt-and-MAC, has been deliberately chosen to use only the OpenSSL program (NOT php), and to allow manual checking from other computers (at least of a sample).
+#  DANGER: As usual, think very carefully about the structure before revising the algorithm.
+# https://en.wikipedia.org/wiki/HMAC
+#  'The Keccak hash function, that was selected by NIST as the SHA-3 competition winner, doesn't need this nested approach and can be used to generate a MAC by simply prepending/appending the key to the message, as it is not susceptible to length-extension attacks.'
+# https://en.wikipedia.org/wiki/Authenticated_encryption
+#  'Encrypt-and-MAC' ... Same key is used.
+# https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
+#  
 
 
 
