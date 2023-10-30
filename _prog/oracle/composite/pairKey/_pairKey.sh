@@ -192,14 +192,6 @@ _pair-mac_calculated-hex() {
 	_pair-mac_calculated-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
 }
 
-_pair-mac_calculated_fromRH-bin() {
-	_current_message-toBin | head -c-64 | _current_message-toSimple | _pair-decrypt | _pair-mac
-}
-
-_pair-mac_calculated_fromRH-hex() {
-	_pair-mac_calculated-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
-}
-
 _pair-mac_received-bin() {
 	_current_message-toBin | tail -c-32
 }
@@ -208,9 +200,23 @@ _pair-mac_received-hex() {
 	_pair-mac_received-bin | _binToHex | tail -c-64 | tr -dc 'a-zA-Z0-9'
 }
 
-_pair-mac_received-rawHex() {
-	_current_message-toBin | tail -c-64 | tr -dc 'a-zA-Z0-9'
+
+_pair-mac_calculated_fromRH-bin() {
+	_current_message-toBin | head -c-64 | _pair-mac
 }
+
+_pair-mac_calculated_fromRH-hex() {
+	_pair-mac_calculated_fromRH-bin | _binToHex | head -c64 | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-mac_received_fromRH-bin() {
+	_current_message-toBin | tail -c-64
+}
+
+_pair-mac_received_fromRH-hex() {
+	_pair-mac_received_fromRH-bin | tail -c-64 | tr -dc 'a-zA-Z0-9'
+}
+
 
 _pair-emit_sequence() {
 	_start
@@ -220,19 +226,21 @@ _pair-emit_sequence() {
 	
 	_messageNormal '_pair-emit' > /dev/tty
 	
-	echo "$currentMessageSimple" | tee >(_pair-mac_received-rawHex > "$safeTmp"/hmac_received.rh) | tee >(_pair-mac_received-hex > "$safeTmp"/hmac_received.hex) > /dev/null
-	
-	_messagePlain_probe '"$safeTmp"/hmac_received.rh' > /dev/tty
-	cat "$safeTmp"/hmac_received.rh > /dev/tty
-	echo > /dev/tty
+	echo "$currentMessageSimple" | _pair-mac_received-hex > "$safeTmp"/hmac_received.hex
 	
 	_messagePlain_probe '"$safeTmp"/hmac_received.hex' > /dev/tty
 	cat "$safeTmp"/hmac_received.hex > /dev/tty
 	echo > /dev/tty
 	
+	echo "$currentMessageSimple" | _pair-mac_received_fromRH-hex > "$safeTmp"/hmac_received_fromRH.hex
+	
+	_messagePlain_probe '"$safeTmp"/hmac_received_fromRH.hex' > /dev/tty
+	cat "$safeTmp"/hmac_received_fromRH.hex > /dev/tty
+	echo > /dev/tty
 	
 	
-	echo "$currentMessageSimple" | tee >(_pair-mac_calculated-hex > "$safeTmp"/hmac_calculated.hex) > /dev/null
+	
+	echo "$currentMessageSimple" | _pair-mac_calculated-hex > "$safeTmp"/hmac_calculated.hex
 	
 	_messagePlain_probe '"$safeTmp"/hmac_calculated.hex' > /dev/tty
 	cat "$safeTmp"/hmac_calculated.hex > /dev/tty
@@ -240,7 +248,8 @@ _pair-emit_sequence() {
 	
 	
 	
-	echo "$currentMessageSimple" | tee >(_pair-mac_calculated_fromRH-hex > "$safeTmp"/hmac_calculated_fromRH.hex) > /dev/null
+	
+	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-hex > "$safeTmp"/hmac_calculated_fromRH.hex
 	
 	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' > /dev/tty
 	cat "$safeTmp"/hmac_calculated_fromRH.hex > /dev/tty
@@ -248,7 +257,9 @@ _pair-emit_sequence() {
 	
 	
 	
-	echo "$currentMessageSimple" | tee >(_pair-mac_generated-hex > "$safeTmp"/hmac_generated.hex) | tee >(_pair-mac_generated-bin > "$safeTmp"/hmac_generated.bin) > /dev/null
+	
+	echo "$currentMessageSimple" | _pair-mac_generated-hex > "$safeTmp"/hmac_generated.hex
+	echo "$currentMessageSimple" | _pair-mac_generated-bin > "$safeTmp"/hmac_generated.bin
 	
 	_messagePlain_probe '"$safeTmp"/hmac_generated.hex' > /dev/tty
 	cat "$safeTmp"/hmac_generated.hex > /dev/tty
@@ -261,14 +272,14 @@ _pair-emit_sequence() {
 		_messagePlain_good 'good: decrypt: hmac: bin' > /dev/tty
 		# decryption
 		echo "$currentMessageSimple" | _current_message-toBin | head -c-32 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
-	elif [[ $(cat "$safeTmp"/hmac_received.rh) == $(cat "$safeTmp"/hmac_calculated_fromRH.hex) ]]
+	elif [[ $(cat "$safeTmp"/hmac_received_fromRH.hex) == $(cat "$safeTmp"/hmac_calculated_fromRH.hex) ]]
 	then
-		_messagePlain_nominal 'decrypt' > /dev/tty
-		_messagePlain_good 'good: decrypt: hmac: hex' > /dev/tty
+		_messagePlain_nominal 'authenticate' > /dev/tty
+		_messagePlain_good 'good: auth: hmac: rawHex' > /dev/tty
 		# decryption
-		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
+		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
 	else
-		_messagePlain_nominal 'encrypt (or exactly symmetric decrypt)' > /dev/tty
+		_messagePlain_nominal 'encrypt' > /dev/tty
 		# encryption
 		echo "$currentMessageSimple" | _pair-encrypt | cat - "$safeTmp"/hmac_generated.bin
 	fi
