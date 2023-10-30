@@ -250,6 +250,7 @@ _pair-emit_sequence() {
 	
 	
 	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-hex > "$safeTmp"/hmac_calculated_fromRH.hex
+	echo "$currentMessageSimple" | _pair-mac_calculated_fromRH-bin > "$safeTmp"/hmac_calculated_fromRH.bin
 	
 	_messagePlain_probe '"$safeTmp"/hmac_calculated_fromRH.hex' > /dev/tty
 	cat "$safeTmp"/hmac_calculated_fromRH.hex > /dev/tty
@@ -274,14 +275,29 @@ _pair-emit_sequence() {
 		echo "$currentMessageSimple" | _current_message-toBin | head -c-32 | _current_message-toSimple | _pair-decrypt | cat - "$safeTmp"/hmac_calculated.hex
 	elif [[ $(cat "$safeTmp"/hmac_received_fromRH.hex) == $(cat "$safeTmp"/hmac_calculated_fromRH.hex) ]]
 	then
-		_messagePlain_nominal 'authenticate' > /dev/tty
+		#_messagePlain_nominal 'authenticate' > /dev/tty
+		#_messagePlain_good 'good: auth: hmac: rawHex' > /dev/tty
+		#echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
+		
+		_messagePlain_nominal 'encrypt' > /dev/tty
 		_messagePlain_good 'good: auth: hmac: rawHex' > /dev/tty
-		# decryption
-		echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
+		if [[ "$FORCE_PURE" == "true" ]]
+		then
+			echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-encrypt | cat - "$safeTmp"/hmac_calculated_fromRH.bin
+		else
+			echo "$currentMessageSimple" | _current_message-toBin | head -c-64 | _current_message-toSimple | _pair-encrypt | base64 | cat - "$safeTmp"/hmac_calculated_fromRH.hex
+		fi
+	elif [[ "$FORCE_PURE" == "true" ]]
+	then
+		_messagePlain_nominal 'encrypt: FORCE_PURE' > /dev/tty
+		# encryption
+		
+		echo "$currentMessageSimple" | _pair-encrypt | cat - "$safeTmp"/hmac_generated.bin
 	else
 		_messagePlain_nominal 'encrypt' > /dev/tty
 		# encryption
-		echo "$currentMessageSimple" | _pair-encrypt | cat - "$safeTmp"/hmac_generated.bin
+		
+		echo "$currentMessageSimple" | _pair-encrypt | base64 | cat - "$safeTmp"/hmac_generated.hex
 	fi
 	
 	_stop
@@ -289,6 +305,28 @@ _pair-emit_sequence() {
 _pair-emit() {
 	"$scriptAbsoluteLocation" _pair-emit_sequence "$@"
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # NOTICE: Encrypt-and-MAC differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
