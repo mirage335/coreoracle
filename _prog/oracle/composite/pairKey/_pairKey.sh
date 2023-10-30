@@ -122,6 +122,24 @@ _pair-summary() {
 	cat "$HOME"/.pair | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | head -c 20
 }
 
+
+
+
+_current_message-toSimple() {
+	cat | base64 | base64 | cat
+}
+
+_current_message-toBin() {
+	cat | base64 -d | base64 -d | cat
+}
+
+_pair-header_received-hex() {
+	_current_message-toBin | xxd -p | tr -d '\n'
+	
+	head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n'
+}
+
+
 # NOTICE: Encrypt-and-MAC/Prepend differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
 #  Multi-user pure ciphertext within a noisy channel necessitates search for authentic ciphertext.
 #  By contrast, mere integrity with single shared secret may be better maintained for complicated computer systems by authenticating human readable plaintext.
@@ -145,38 +163,34 @@ _pair-enc() {
 	
 	local currentExitStatus
 	
-	local current_message
-	current_message=$(cat | base64 | base64)
-	
-	#local current_mac
-	#current_mac=$(echo "$current_message" | base64 -d | base64 -d | openssl dgst -sha3-512)
-	#echo $current_mac
+	local currentMessageSimple
+	currentMessageSimple=$(_current_message-toSimple)
 	
 	
 	
 	head -c 20 "$HOME"/.pair > "$safeTmp"/keyAuth
 	
 	# Hash everything after expected hash header.
-	echo "$current_message" | base64 -d | base64 -d | tail -c +128 | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
+	echo "$currentMessageSimple" | base64 -d | base64 -d | tail -c +128 | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
 	
 	# If hash of everything after expected hash header... matched header... then decrypt.
-	if [[ $(cat "$safeTmp"/HMAC-output | xxd -p | tr -d '\n') == $(echo "$current_message" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n') ]]
+	if [[ $(cat "$safeTmp"/HMAC-output | xxd -p | tr -d '\n') == $(echo "$currentMessageSimple" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n') ]]
 	then
 		# decrypting
-		true
+		
+		
+		
+		
 	# Else the header did not describe the contents... so encrypt .
 	else
 		# encrypting
 		
 		# Hash entire message, at this point do not skip over nonexistent header .
-		echo "$current_message" | base64 -d | base64 -d | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
+		echo "$currentMessageSimple" | base64 -d | base64 -d | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
 		
 		# DANGER: TODO: OpenSSL may ignore much of the keyfile .
-		echo "$current_message" | base64 -d | base64 -d | openssl enc -e -aes-256-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/HMAC-output -
+		echo "$currentMessageSimple" | base64 -d | base64 -d | openssl enc -e -aes-256-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/HMAC-output -
 	fi
-	
-	
-	
 	
 	
 	
@@ -191,7 +205,7 @@ _pair-enc() {
 	# ATTENTION: scrap
 	
 	
-	#echo "$current_message" | base64 -d | base64 -d | tee >(head -c 123 > "$safeTmp"/HMAC-input) | tee >(tail -c+123 | openssl enc | HMAC > "$safeTmp"/HMAC-output)
+	#echo "$currentMessageSimple" | base64 -d | base64 -d | tee >(head -c 123 > "$safeTmp"/HMAC-input) | tee >(tail -c+123 | openssl enc | HMAC > "$safeTmp"/HMAC-output)
 	
 	
 	

@@ -36,7 +36,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='2591634041'
-export ub_setScriptChecksum_contents='3067741334'
+export ub_setScriptChecksum_contents='255137647'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -4767,6 +4767,19 @@ _getDep() {
 	
 	_mustGetDep "$@"
 }
+
+
+
+_binToHex() {
+	xxd -p | tr -d '\n'
+}
+
+_hexToBin() {
+	xxd -r -p
+}
+
+
+
 
 _resetFakeHomeEnv_extra() {
 	true
@@ -14063,13 +14076,39 @@ _pair-grab() {
 	
 	echo -n > "$HOME"/.pair
 	chmod 600 "$HOME"/.pair
-	_pair-grab-stdout > "$HOME"/.pair
+	#_pair-grab-stdout > "$HOME"/.pair
+	
+	# ATTENTION: Since pair keys are expected ephemeral, algorithm may change, or may be disregarded, invalidating existing pair keys.
+	_pair-grab-stdout | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | dd of="$HOME"/.pair bs=1M count=10 status=progress iflag=fullblock
 }
 
 _pair-purge() {
 	! [[ -e "$HOME"/.pair ]] && return 0
 	_sweep "$HOME"/.pair
 }
+
+# ATTENTION: Since pair keys are expected ephemeral, algorithm may change, or may be disregarded, invalidating existing pair keys.
+_pair-summary() {
+	cat "$HOME"/.pair | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | head -c 20
+}
+
+
+
+
+_current_message-toSimple() {
+	cat | base64 | base64 | cat
+}
+
+_current_message-toBin() {
+	cat | base64 -d | base64 -d | cat
+}
+
+_pair-header_received-hex() {
+	_current_message-toBin | xxd -p | tr -d '\n'
+	
+	head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n'
+}
+
 
 # NOTICE: Encrypt-and-MAC/Prepend differs from usual ORACLE reference implementation practice of Encrypt-then-MAC intentionally.
 #  Multi-user pure ciphertext within a noisy channel necessitates search for authentic ciphertext.
@@ -14083,8 +14122,8 @@ _pair-purge() {
 _pair-enc() {
 	_start
 	
-	mkfifo "$safeTmp"/keyPipe
-	cat "$HOME"/.pair > "$safeTmp"/keyPipe &
+	mkfifo "$safeTmp"/key-pipe
+	#_pair-summary > "$safeTmp"/key &
 	
 	
 	# encrypt/decrypt (symmetric encryption should also be decryption?)
@@ -14094,16 +14133,49 @@ _pair-enc() {
 	
 	local currentExitStatus
 	
-	local current_message
-	current_message=$(cat | base64) # ???
-	
-	local current_mac
-	current_mac=$(echo "$current_message" | base64 -d | openssl dgst -sha3-512)
-	
-	echo $current_mac
+	local currentMessageSimple
+	currentMessageSimple=$(_current_message-toSimple)
 	
 	
 	
+	head -c 20 "$HOME"/.pair > "$safeTmp"/keyAuth
+	
+	# Hash everything after expected hash header.
+	echo "$currentMessageSimple" | base64 -d | base64 -d | tail -c +128 | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
+	
+	# If hash of everything after expected hash header... matched header... then decrypt.
+	if [[ $(cat "$safeTmp"/HMAC-output | xxd -p | tr -d '\n') == $(echo "$currentMessageSimple" | base64 -d | base64 -d | head -c 128 | tr -dc 'a-zA-Z0-9' | xxd -p | tr -d '\n') ]]
+	then
+		# decrypting
+		
+		
+		
+		
+	# Else the header did not describe the contents... so encrypt .
+	else
+		# encrypting
+		
+		# Hash entire message, at this point do not skip over nonexistent header .
+		echo "$currentMessageSimple" | base64 -d | base64 -d | cat "$safeTmp"/keyAuth - | openssl dgst -sha3-512 -binary | xxd -p | tr -d '\n' | head -c 128 | xxd -r -p > "$safeTmp"/HMAC-output
+		
+		# DANGER: TODO: OpenSSL may ignore much of the keyfile .
+		echo "$currentMessageSimple" | base64 -d | base64 -d | openssl enc -e -aes-256-cbc -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/HMAC-output -
+	fi
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	# ATTENTION: scrap
+	
+	
+	#echo "$currentMessageSimple" | base64 -d | base64 -d | tee >(head -c 123 > "$safeTmp"/HMAC-input) | tee >(tail -c+123 | openssl enc | HMAC > "$safeTmp"/HMAC-output)
 	
 	
 	

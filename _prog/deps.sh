@@ -1,5 +1,7 @@
 
 _deps_planKey() {
+	_deps_generic
+	
 	_deps_fakehome
 	#_deps_abstractfs
 	
@@ -7,10 +9,14 @@ _deps_planKey() {
 }
 
 _deps_pairKey() {
+	_deps_generic
+	
 	export enUb_oracle_pairKey="true"
 }
 
 _deps_bandKey() {
+	_deps_generic
+	
 	export enUb_oracle_bandKey="true"
 }
 
