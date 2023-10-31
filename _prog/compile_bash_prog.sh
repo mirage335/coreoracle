@@ -87,6 +87,13 @@ _vars_compile_bash_prog() {
 _compile_bash_header_prog() {	
 	export includeScriptList
 	true
+	
+	
+	includeScriptList+=( "notices/"license.txt )
+	
+	includeScriptList+=( "notices/"WARNING_cryptography_willBeREPORTED_and_publicNOTICES.txt )
+	
+	includeScriptList+=( "notices/"gpl-3.0.txt )
 }
 
 _compile_bash_header_program_prog() {	

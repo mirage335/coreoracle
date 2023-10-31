@@ -123,6 +123,8 @@ _pair-grab() {
 	_pair-grab-stdout | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | dd of="$HOME"/.pair bs=1M count=10 status=progress iflag=fullblock
 	
 	head -c 20 "$HOME"/.pair > "$HOME"/.pair-keyAuth
+	
+	tail -c 10 "$HOME"/.pair | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | tr -dc '0-9A-Za-z'
 }
 
 _pair-purge() {
