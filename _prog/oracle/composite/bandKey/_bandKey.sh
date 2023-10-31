@@ -42,7 +42,7 @@ _band() {
 	
 	# 80Bytes or 17980Bytes key
 	local currentKeySize
-	currentKeySize="120"
+	currentKeySize="160"
 	
 	# DANGER: STRONGLY DISCOURAGED. Expected very detrimental in most situations. Please do not use this unless you can imagine exactly a good reason why you would want it.
 	[[ "$FORCE_HUGE" == "true" ]] && currentKeySize="17980"
@@ -54,6 +54,13 @@ _band() {
 	currentDataSize=160
 	[[ "$FORCE_AVALANCHE" == "true" ]] && currentDataSize=20
 	
+	if [[ "$currentKeySize" -lt "$currentDataSize" ]]
+	then
+		# DANGER: Absolutely must not reach here. Detrimental and also breaks the detection of whether to decode or encode .
+		_stop 1
+		return 1
+	fi
+	
 	local currentMessageSize
 	#currentMessageSize=100
 	#[[ "$FORCE_HUGE" == "true" ]] && currentMessageSize=18000
@@ -62,7 +69,7 @@ _band() {
 	
 	if [[ $(echo "$currentMessageSimple" | base64 -d | wc -c | tr -dc '0-9') -ge "$currentKeySize" ]] || ( echo "$currentMessageSimple" | base64 -d 2>/dev/null | _band-input > /dev/null 2>&1 && [[ $(echo "$currentMessageSimple" | base64 -d 2>/dev/null | base64 -d 2>/dev/null | wc -c | tr -dc '0-9') -ge "$currentKeySize" ]] )
 	then
-		# decrypt
+		# decode
 		echo "$currentMessageSimple" | base64 -d | _band-input | head -c "$currentKeySize" > "$safeTmp"/key
 		if [[ "$FORCE_AVALANCHE" == "true" ]]
 		then
@@ -71,7 +78,7 @@ _band() {
 			echo "$currentMessageSimple" | base64 -d | _band-input | head -c "$currentMessageSize" | tail -c+"$currentKeyTail" | openssl enc -d -aes-128-cfb1 -nosalt -iter 262144 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin | head -c "$currentMessageSize"
 		fi
 	else
-		# encrypt
+		# encode
 		_extractEntropyBin "$currentKeySize" > "$safeTmp"/key
 		if [[ "$FORCE_AVALANCHE" == "true" ]]
 		then

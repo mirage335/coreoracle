@@ -644,7 +644,7 @@ export anchorName=$(basename "$anchorScriptAbsoluteLocation" | sed 's/\.bat$//g'
 
 
 export anchorSourceDir="coreoracle"
-export anchorSource="pairKey"
+export anchorSource="bandKey"
 export anchorSourcePath="$anchorSourceDir"/"$anchorSource"
 
 export anchorLabName=anchorLabName
@@ -1394,7 +1394,7 @@ SET "MSWanchorName=%~n0"
 REM Typically set automatically by '_anchor' function.
 SET "MSWanchorSourceDir=coreoracle"
 
-SET "MSWanchorSource=pairKey"
+SET "MSWanchorSource=bandKey"
 
 if not "%MSWanchorSourceDir%"=="ubiquitous_bash" (
 	if "%MSWanchorSource%"=="lean.sh" (
