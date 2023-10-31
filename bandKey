@@ -36,7 +36,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='2591634041'
-export ub_setScriptChecksum_contents='1584338064'
+export ub_setScriptChecksum_contents='2465125607'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -14060,18 +14060,33 @@ _php_password_to_key() {
 
 
 
-# NOTICE: Transmits relatively long symmetric key, assuming much stronger signal-to-noise ratio for the intended receiver. Can be a post-quantum technique to establish a separate, shared secret, though only through a longer protocol, not by itself, as it would be far more efficient to bidirectionally agree which messages have or have not been received, than to rely on complete reception of a single large key.
+# NOTICE: Transmits relatively long symmetric key, assuming much stronger signal-to-noise ratio for the intended receiver. Can be a post-quantum technique to establish a separate, shared secret, though only through a longer protocol, not by itself, as it would be far more efficient to bidirectionally agree which small messages have or have not been received, than to rely on complete reception of a single large key. Additionally, automatic search would be necessary, as a squelch is fundamentally incompatible with such a technique.
 
 # ATTENTION: May also be used as an 'all-or-nothing' proof of reception of the entire key (which is also plainly sent). For now, this is more or less the expected use case, if any.
 
+# ATTENTION: Some benefits are possible from allowing single-bit corruption in the data. Integrity is still at least partially improved such that human readability of both the digital and analog domains may then suffice. However, if rejecting corruption is more important than exchanging at least some information, then set FORCE_AVALANCHE=true .
+
+# ATTENTION: Data less than "$currentDataSize" may result in random garbage output. Pad if necessary.
+
 
 _band-output() {
-	if [[ "$FORCE_PURE" ]]
+	if [[ "$FORCE_PURE" == "true" ]]
 	then
 		cat
 		return
 	else
 		base64
+		return
+	fi
+}
+
+_band-input() {
+	if [[ "$FORCE_PURE" == "true" ]]
+	then
+		cat
+		return
+	else
+		base64 -d
 		return
 	fi
 }
@@ -14088,7 +14103,7 @@ _band() {
 	
 	# 80Bytes or 17980Bytes key
 	local currentKeySize
-	currentKeySize="80"
+	currentKeySize="120"
 	
 	# DANGER: STRONGLY DISCOURAGED. Expected very detrimental in most situations. Please do not use this unless you can imagine exactly a good reason why you would want it.
 	[[ "$FORCE_HUGE" == "true" ]] && currentKeySize="17980"
@@ -14097,7 +14112,8 @@ _band() {
 	let currentKeyTail="$currentKeySize"+1
 	
 	local currentDataSize
-	currentDataSize=20
+	currentDataSize=160
+	[[ "$FORCE_AVALANCHE" == "true" ]] && currentDataSize=20
 	
 	local currentMessageSize
 	#currentMessageSize=100
@@ -14105,23 +14121,31 @@ _band() {
 	let currentMessageSize="$currentKeySize"+"$currentDataSize"
 	
 	
-	
-	if [[ $(echo "$currentMessageSimple" | base64 -d | wc -c | tr -dc '0-9') -ge "$currentKeySize" ]]
+	if [[ $(echo "$currentMessageSimple" | base64 -d | wc -c | tr -dc '0-9') -ge "$currentKeySize" ]] || ( echo "$currentMessageSimple" | base64 -d 2>/dev/null | _band-input > /dev/null 2>&1 && [[ $(echo "$currentMessageSimple" | base64 -d 2>/dev/null | base64 -d 2>/dev/null | wc -c | tr -dc '0-9') -ge "$currentKeySize" ]] )
 	then
 		# decrypt
-		echo "$currentMessageSimple" | base64 -d | head -c "$currentKeySize" > "$safeTmp"/key
-		echo "$currentMessageSimple" | base64 -d | head -c "$currentMessageSize" | tail -c+"$currentKeyTail" | openssl enc -d -aes-256-ofb -nosalt -iter 16777216 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin
+		echo "$currentMessageSimple" | base64 -d | _band-input | head -c "$currentKeySize" > "$safeTmp"/key
+		if [[ "$FORCE_AVALANCHE" == "true" ]]
+		then
+			echo "$currentMessageSimple" | base64 -d | _band-input | head -c "$currentMessageSize" | tail -c+"$currentKeyTail" | openssl enc -d -aes-256-cfb -nosalt -iter 262144 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin | head -c "$currentMessageSize"
+		else
+			echo "$currentMessageSimple" | base64 -d | _band-input | head -c "$currentMessageSize" | tail -c+"$currentKeyTail" | openssl enc -d -aes-128-cfb1 -nosalt -iter 262144 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin | head -c "$currentMessageSize"
+		fi
 	else
 		# encrypt
 		_extractEntropyBin "$currentKeySize" > "$safeTmp"/key
-		echo "$currentMessageSimple" | base64 -d | head -c "$currentDataSize" | openssl enc -e -aes-256-ofb -nosalt -iter 16777216 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin | _band-output
+		if [[ "$FORCE_AVALANCHE" == "true" ]]
+		then
+			echo "$currentMessageSimple" | base64 -d | head -c "$currentDataSize" | openssl enc -e -aes-256-cfb -nosalt -iter 262144 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/key - | head -c "$currentMessageSize" | _band-output
+		else
+			echo "$currentMessageSimple" | base64 -d | head -c "$currentDataSize" | openssl enc -e -aes-128-cfb1 -nosalt -iter 262144 -pass file:"$safeTmp"/key -out /dev/stdout -in /dev/stdin | cat "$safeTmp"/key - | head -c "$currentMessageSize" | _band-output
+		fi
 	fi
 	
 	
 	
 	
-	_sweep "$safeTmp"/key
-	
+	_sweep "$safeTmp"/key > /dev/null 2>&1
 	
 	_stop
 }
@@ -14138,9 +14162,11 @@ _band_clipboard() {
 	then
 		cat /dev/clipboard | _band | cat > /dev/clipboard
 		echo > /dev/tty
+		return
 	else
 		xclip -out -selection clipboard | _band | xclip -in -selection clipboard
 		echo > /dev/tty
+		return
 	fi
 }
 
