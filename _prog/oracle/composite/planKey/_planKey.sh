@@ -1,12 +1,13 @@
 
 # NOTICE: Legacy . Emphasizes integrity by using only GPG . Beware any CVEs against GPG . 
 
-
+# Private LAN (PLAN)
 
 
 
 
 _plan() {
+	mkdir -p "$HOME"/.plan
 	gpg --homedir "$HOME"/.plan "$@"
 }
 
