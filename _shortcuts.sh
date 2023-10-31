@@ -13,6 +13,21 @@ rand() {
 }
 
 
+_band_clipboard() {
+	"$shortcutsPath_coreoracle"/bandKey ${FUNCNAME[0]} "$@"
+}
+_band() {
+	"$shortcutsPath_coreoracle"/bandKey ${FUNCNAME[0]} "$@"
+}
+band() {
+	_band "$@"
+}
+
+
+_pair-grab() {
+	"$shortcutsPath_coreoracle"/pairKey ${FUNCNAME[0]} "$@"
+}
+
 _pair_copy() {
 	"$shortcutsPath_coreoracle"/pairKey ${FUNCNAME[0]} "$@"
 }
@@ -25,6 +40,9 @@ _pair-emit() {
 	"$shortcutsPath_coreoracle"/pairKey ${FUNCNAME[0]} "$@"
 }
 
+_pair_clipboard() {
+	"$shortcutsPath_coreoracle"/pairKey ${FUNCNAME[0]} "$@"
+}
 _pair() {
 	"$shortcutsPath_coreoracle"/pairKey ${FUNCNAME[0]} "$@"
 }
