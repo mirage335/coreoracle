@@ -434,9 +434,11 @@ _pair() {
 _pair_clipboard() {
 	if _if_cygwin
 	then
-		cat /dev/clipboard | _pair-emit
+		cat /dev/clipboard | _pair-emit | cat > /dev/clipboard
+		echo > /dev/tty
 	else
-		xclip -out -selection clipboard | _pair-emit
+		xclip -out -selection clipboard | _pair-emit | xclip -in -selection clipboard
+		echo > /dev/tty
 	fi
 }
 
