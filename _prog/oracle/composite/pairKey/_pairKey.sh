@@ -88,7 +88,7 @@ _pair-grab-stdout() {
 	
 	
 	_messagePlain_request 'request: Please confirm presence at YubiKey at the minute.' > /dev/tty
-	while [[ $(date +%S | sed 's/^0//') -gt 0 ]]
+	while [[ $(date +%S | sed 's/^0//') -gt 25 ]]
 	do
 		date +%S > /dev/tty
 		sleep 1 > /dev/tty
@@ -431,7 +431,14 @@ _pair() {
 
 
 
-
+_pair_clipboard() {
+	if _if_cygwin
+	then
+		cat /dev/clipboard | _pair-emit
+	else
+		xclip -out -selection clipboard | _pair-emit
+	fi
+}
 
 
 

@@ -8,21 +8,15 @@ _band() {
 	_start
 	
 	local currentMessageSimple
-	currentMessageSimple=$(_current_message-toSimple)
-	
-	
+	currentMessageSimple=$(cat | base64)
 	
 	# Key size. Maybe think of bytes entropy (7B), redundancy (4s/B), minimum transmit power (10dB S/N == 10), relative gain (-10dB == 0.1), decibels (6dB == 2*2) .
 	# 7 * 4 * 10 * 0.1 * 2*2
 	# 112Bytes
 	
-	# 180Bytes or 29980Bytes key
-	
-	
-	
-	
-	
-	#base64 -d | openssl enc -d -aes-256-cfb -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
+	# 80Bytes or 17980Bytes key
+	echo "$currentMessageSimple" | base64 -d | head -c 80 > "$safeTmp"/key
+	echo "$currentMessageSimple" | base64 -d | tail -c+81 | openssl enc -d -aes-256-cfb -nosalt -pbkdf2 -pass file:"$HOME"/.pair -out /dev/stdout -in /dev/stdin
 	
 	local currentMessageSimple
 	currentMessageSimple=$(cat | base64)
