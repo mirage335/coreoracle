@@ -120,13 +120,37 @@ _pair-grab() {
 	#_pair-grab-stdout > "$HOME"/.pair
 	
 	# ATTENTION: Since pair keys are expected ephemeral, algorithm may change, or may be disregarded, invalidating existing pair keys.
-	_pair-grab-stdout | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | dd of="$HOME"/.pair bs=1M count=10 status=progress iflag=fullblock
+	_pair-grab-stdout | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | dd of="$HOME"/.pair bs=1k count=14 status=progress iflag=fullblock
 	
 	head -c 20 "$HOME"/.pair > "$HOME"/.pair-keyAuth
 	
 	tail -c 10 "$HOME"/.pair | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | tr -dc '0-9a-zA-Z' | head -c 20
 	echo
 }
+
+
+_pair-grab-stdout-stdin() {
+	_messagePlain_request 'request: Please appropriately input seed keystrokes.' > /dev/tty
+	_messagePlain_request 'Press   [Enter],Ctrl+D   after all seed inputs.' > /dev/tty
+	cat | tr -dc 'a-zA-Z0-9'
+}
+
+_pair-seed() {
+	[[ -e "$HOME"/.pair ]] && _pair-purge
+	
+	echo -n > "$HOME"/.pair
+	chmod 600 "$HOME"/.pair
+	#_pair-grab-stdout > "$HOME"/.pair
+	
+	# ATTENTION: Since pair keys are expected ephemeral, algorithm may change, or may be disregarded, invalidating existing pair keys.
+	_pair-grab-stdout-stdin | xxd -p | tr -d '\n' | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | xxd -p | tr -d '\n' | dd of="$HOME"/.pair bs=1k count=14 status=progress iflag=fullblock
+	
+	head -c 20 "$HOME"/.pair > "$HOME"/.pair-keyAuth
+	
+	tail -c 10 "$HOME"/.pair | openssl enc -e -aes-256-cbc -pass stdin -nosalt -pbkdf2 -in /dev/zero 2>/dev/null | tr -dc '0-9a-zA-Z' | head -c 20
+	echo
+}
+
 
 _pair-purge() {
 	! [[ -e "$HOME"/.pair ]] && ! [[ -e "$HOME"/.pair-keyAuth ]] && return 0

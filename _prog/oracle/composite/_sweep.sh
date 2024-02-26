@@ -49,7 +49,8 @@ _sweep_branch() {
 	
 	if man wipe 2> /dev/null | grep 'Berke Durak' > /dev/null && man wipe 2> /dev/null | grep '\-Q <number\-of\-passes>' > /dev/null && man wipe 2> /dev/null | grep '\-s (silent mode)' > /dev/null
 	then
-		wipe -q -f -s "$@" > /dev/null
+		#wipe -q -f -s "$@" > /dev/null
+		wipe -q -Q 2 -f -s "$@" > /dev/null
 		return 0
 	fi
 	
