@@ -74,6 +74,10 @@ _extractEntropyAlphaCapNum() {
 	_openssl_rand "$1" | base64 | tr -dc 'A-Z0-9' | head -c "$1"
 }
 
+_extractEntropyNum() {
+	_openssl_rand "$1" | base64 | tr -dc '0-9' | head -c "$1"
+}
+
 _extractEntropyBin() {
 	_openssl_rand "$1" | head -c "$1"
 }
