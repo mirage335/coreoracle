@@ -241,6 +241,13 @@ _compile_bash_program_prog() {
 	
 	
 	[[ "$enUb_oracle_bandKey" == "true" ]] && includeScriptList+=( "oracle/composite/bandKey/"_bandKey.sh )
+
+
+
+	if [[ "$enUb_oracle_commKey" != "true" ]] && [[ "$enUb_oracle_fragKey" != "true" ]] && [[ "$enUb_oracle_bandKey" != "true" ]] && [[ "$enUb_oracle_pairKey" != "true" ]] && [[ "$enUb_oracle_planKey" != "true" ]]
+	then
+		includeScriptList+=( "knowledge.sh" )
+	fi
 }
 
 _compile_bash_config_prog() {

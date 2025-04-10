@@ -28,4 +28,6 @@ _generate_compile_bash_prog() {
 	
 	"$scriptAbsoluteLocation" _compile_bash planKey planKey
 	chmod 700 "$scriptAbsoluteFolder"/planKey
+
+	"$scriptAbsoluteLocation" _compile_bash core knowledge.sh
 }

@@ -36,7 +36,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='2591634041'
-export ub_setScriptChecksum_contents='3265242807'
+export ub_setScriptChecksum_contents='654858670'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -7151,6 +7151,8 @@ _generate_compile_bash_prog() {
 	
 	"$scriptAbsoluteLocation" _compile_bash planKey planKey
 	chmod 700 "$scriptAbsoluteFolder"/planKey
+
+	"$scriptAbsoluteLocation" _compile_bash core knowledge.sh
 }
 
 #Default is to include all, or run a specified configuration. For this reason, it will be more typical to override this entire function, rather than append any additional code.
@@ -8943,6 +8945,13 @@ _compile_bash_program_prog() {
 	
 	
 	[[ "$enUb_oracle_bandKey" == "true" ]] && includeScriptList+=( "oracle/composite/bandKey/"_bandKey.sh )
+
+
+
+	if [[ "$enUb_oracle_commKey" != "true" ]] && [[ "$enUb_oracle_fragKey" != "true" ]] && [[ "$enUb_oracle_bandKey" != "true" ]] && [[ "$enUb_oracle_pairKey" != "true" ]] && [[ "$enUb_oracle_planKey" != "true" ]]
+	then
+		includeScriptList+=( "knowledge.sh" )
+	fi
 }
 
 _compile_bash_config_prog() {
