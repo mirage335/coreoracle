@@ -36,7 +36,7 @@ _ub_cksum_special_derivativeScripts_contents() {
 #export ub_setScriptChecksum_disable='true'
 ( [[ -e "$0".nck ]] || [[ "${BASH_SOURCE[0]}" != "${0}" ]] || [[ "$1" == '--profile' ]] || [[ "$1" == '--script' ]] || [[ "$1" == '--call' ]] || [[ "$1" == '--return' ]] || [[ "$1" == '--devenv' ]] || [[ "$1" == '--shell' ]] || [[ "$1" == '--bypass' ]] || [[ "$1" == '--parent' ]] || [[ "$1" == '--embed' ]] || [[ "$1" == '--compressed' ]] || [[ "$0" == "/bin/bash" ]] || [[ "$0" == "-bash" ]] || [[ "$0" == "/usr/bin/bash" ]] || [[ "$0" == "bash" ]] ) && export ub_setScriptChecksum_disable='true'
 export ub_setScriptChecksum_header='2591634041'
-export ub_setScriptChecksum_contents='4217351728'
+export ub_setScriptChecksum_contents='3265242807'
 
 # CAUTION: Symlinks may cause problems. Disable this test for such cases if necessary.
 # WARNING: Performance may be crucial here.
@@ -776,6 +776,18 @@ fi
 
 if _if_cygwin
 then
+	# NOTICE: Recent versions of Cygwin seem to have replaced or omitted '/usr/bin/gpg.exe', possibly in favor of a symlink to '/usr/bin/gpg2.exe' .
+	# CAUTION: This override is specifically to ensure availability of 'gpg' binary through a function, but that could have the effect of presenting an incorrect gpg2 CLI interface to software expecting a gpg1 CLI interface.
+	 # In practice, Debian Linux seem to impose gpg v2 as the CLI interface for gpg - 'gpg --version' responds v2 .
+	# WARNING: All of which is a good reason to always automatically prefer a specified major version binary of gpg (ie. gpg2) in other software.
+	if ! type -p gpg > /dev/null && type -p gpg2 > /dev/null
+	then
+		gpg() {
+			gpg2 "$@"
+		}
+	fi
+	
+	
 	# WARNING: Since MSW/Cygwin is hardly suitable for mounting UNIX/tmpfs/ramfs/etc filesystems, 'mountpoint' 'safety checks' are merely disabled.
 	mountpoint() {
 		true
@@ -795,9 +807,12 @@ then
 		false
 	}
 
+	# ATTENTION: Sets the priority for '_wsl' as well as 'u' shortcuts. Override with '_bashrc' or similar as desired (eg. replace 'ubdist_embedded' with some specialized 3D printer firwmare/klipper dist/OS, etc).
 	_wsl() {
 		local currentBin_wsl
-		currentBin_wsl=$(type -p wsl)
+		#currentBin_wsl=$(type -p wsl)
+
+		currentBin_wsl="wsl"
 
 		if ( [[ "$1" != "-"* ]] || [[ "$1" == "-u" ]] || [[ "$1" == "-e" ]] || [[ "$1" == "--exec" ]] ) && ( [[ "$1" != "-d" ]] || [[ "$2" != "-d" ]] || [[ "$3" != "-d" ]] || [[ "$4" != "-d" ]] || [[ "$5" != "-d" ]] || [[ "$6" != "-d" ]] )
 		then
@@ -831,9 +846,19 @@ then
 	#l() {
 		#_wsl "$@"
 	#}
-	alias l='_wsl'
+	#alias l='_wsl'
+	alias u='_wsl'
 fi
-
+	
+_sudo_cygwin-if_parameter-skip2() {
+	[[ "$1" == "-u" ]] && return 0
+	return 1
+}
+_sudo_cygwin-if_parameter-skip1() {
+	[[ "$1" == "-n" ]] && return 0
+	[[ "$1" == "--preserve-env"* ]] && return 0
+	return 1
+}
 
 # CAUTION: Fragile, at best.
 # DANGER: MSW apparently does not necessarily allow 'Administrator' access to all network 'drives'. Workaround copying of obvious files is limited.
@@ -854,12 +879,46 @@ _sudo_cygwin_sequence() {
 	# 'cygstart/runas doesn't handle arguments with spaces correctly so create'
 	# 'a script that will do so properly.'
 	echo "#!/bin/bash" >> "$safeTmp"/cygwin_sudo_temp.sh
+
+	echo "cd \"$PWD"\" >> "$safeTmp"/cygwin_sudo_temp.sh
+
 	echo "export PATH=\"$PATH\"" >> "$safeTmp"/cygwin_sudo_temp.sh
-	
-	
+
+	# No production use.
+	echo "export GH_TOKEN=\"$GH_TOKEN\"" >> "$safeTmp"/cygwin_sudo_temp.sh
+	echo "export INPUT_GITHUB_TOKEN=\"$INPUT_GITHUB_TOKEN\"" >> "$safeTmp"/cygwin_sudo_temp.sh
+	echo "export TOKEN=\"$TOKEN\"" >> "$safeTmp"/cygwin_sudo_temp.sh
+
+	# No production use.
+	echo "export nonet=\"$nonet\"" >> "$safeTmp"/cygwin_sudo_temp.sh
+	echo "export devfast=\"$devfast\"" >> "$safeTmp"/cygwin_sudo_temp.sh
+	echo "export skimfast=\"$skimfast\"" >> "$safeTmp"/cygwin_sudo_temp.sh
+
+	local currentParam1
+	while _sudo_cygwin-if_parameter-skip2 "$@" || _sudo_cygwin-if_parameter-skip1 "$@"
+	do
+		currentParam1="$1"
+
+		if _sudo_cygwin-if_parameter-skip2 "$currentParam1"
+		then
+			! shift && _messageFAIL
+			! shift && _messageFAIL
+			currentParam1=""
+		fi
+
+		if _sudo_cygwin-if_parameter-skip1 "$currentParam1"
+		then
+			! shift && _messageFAIL
+			currentParam1=""
+		fi
+	done
+
+	#echo 'local currentExitStatus' >> "$safeTmp"/cygwin_sudo_temp.sh
 	_safeEcho_newline "$safeTmp"/_bin.bat "$@" >> "$safeTmp"/cygwin_sudo_temp.sh
+	echo 'currentExitStatus=$?' >> "$safeTmp"/cygwin_sudo_temp.sh
 	echo 'echo > "'"$safeTmp"'"/sequenceDone_'"$ubiquitousBashID" >> "$safeTmp"/cygwin_sudo_temp.sh
 	echo 'sleep 3' >> "$safeTmp"/cygwin_sudo_temp.sh
+	echo 'exit $currentExitStatus' >> "$safeTmp"/cygwin_sudo_temp.sh
 	chmod u+x "$safeTmp"/cygwin_sudo_temp.sh
 	
 	
@@ -870,6 +929,7 @@ _sudo_cygwin_sequence() {
 	chmod u+x "$safeTmp"/"$currentScriptBasename"
 	
 	cp "$scriptLib"/ubiquitous_bash/_bin.bat "$safeTmp"/_bin.bat 2>/dev/null
+	#cp /home/root/.ubcore/ubiquitous_bash/_bin.bat "$safeTmp"/_bin.bat 2>/dev/null
 	cp -f "$scriptAbsoluteFolder"/_bin.bat "$safeTmp"/_bin.bat 2>/dev/null
 	chmod u+x "$safeTmp"/_bin.bat
 
@@ -915,22 +975,22 @@ _sudo_cygwin() {
 if _if_cygwin && type cygstart > /dev/null 2>&1
 then
 	sudo_cygwin() {
-		[[ "$1" == "-n" ]] && shift
+		#[[ "$1" == "-n" ]] && shift
 		if type cygstart > /dev/null 2>&1
 		then
 			_sudo_cygwin "$@"
 			#cygstart --action=runas "$@"
 			#"$@"
 			return
-		else
-			"$@"
-			return
 		fi
+		
+		"$@"
+		return
 		
 		return 1
 	}
 	sudoc() {
-		[[ "$1" == "-n" ]] && return 1
+		#[[ "$1" == "-n" ]] && return 1
 		sudo_cygwin "$@"
 	}
 	alias sudo=sudoc
@@ -1260,6 +1320,25 @@ then
 	kwrite() {
 		kate -n "$@"
 	}
+
+	_aria2c_cygwin_overide() {
+		if _safeEcho_newline "$@" | grep '\--async-dns' > /dev/null
+		then
+			aria2c "$@"
+			return
+		else
+			aria2c --async-dns=false "$@"
+			return
+		fi
+	}
+	alias aria2c=_aria2c_cygwin_overide
+
+	##! type -p wslg
+	#[[ -e '/cygdrive/c/WINDOWS/system32/wslg.exe' ]] && wsl() { '/cygdrive/c/WINDOWS/system32/wslg.exe' "$@" ; }
+	[[ -e '/cygdrive/c/Program Files/WSL/wslg.exe' ]] && wslg() { '/cygdrive/c/Program Files/WSL/wslg.exe' "$@" ; } && wslg.exe() { wslg "$@" ; }
+	##! type -p wsl
+	#[[ -e '/cygdrive/c/WINDOWS/system32/wsl.exe' ]] && wsl() { '/cygdrive/c/WINDOWS/system32/wsl.exe' "$@" ; }
+	[[ -e '/cygdrive/c/Program Files/WSL/wsl.exe' ]] && wsl() { '/cygdrive/c/Program Files/WSL/wsl.exe' "$@" ; } && wsl.exe() { wsl "$@" ; }
 fi
 
 # WARNING: What is otherwise considered bad practice may be accepted to reduce substantial MSW/Cygwin inconvenience .
@@ -1439,7 +1518,15 @@ _report_setup_ubcp() {
 	[[ "$currentCygdriveC_equivalent" == "" ]] && currentCygdriveC_equivalent=$(cygpath -S | sed 's/\/Windows\/System32//g')
 	[[ "$1" == "/" ]] && currentCygdriveC_equivalent=$(echo "$PWD" | sed 's/\(\/cygdrive\/[a-zA-Z]*\).*/\1/')
 
+
+	mkdir -p "$currentCygdriveC_equivalent"/core/infrastructure/
+	#cd "$currentCygdriveC_equivalent"/core/infrastructure/
+
+
 	find /bin/ /usr/bin/ /sbin/ /usr/sbin/ | tee "$currentCygdriveC_equivalent"/core/infrastructure/ubcp-binReport > /dev/null
+
+
+	apt-cyg show | cut -f1 -d\ | tail -n +2 | tee "$currentCygdriveC_equivalent"/core/infrastructure/ubcp-packageReport > /dev/null
 }
 
 
@@ -1614,7 +1701,7 @@ _mitigate-ubcp_rewrite_procedure() {
 			fi
 		fi
 		
-		
+		[[ -e "$processedLinkDirective" ]] && rm -f "$currentLinkFolder"/"$currentLinkFile"
 		
 		ln -sf "$processedLinkDirective" "$currentLinkFolder"/"$currentLinkFile"
 		
@@ -1826,10 +1913,10 @@ _mitigate-ubcp_directory() {
 _mitigate-ubcp() {
 	export mitigate_ubcp_modifySymlink='true'
 	export mitigate_ubcp_replaceSymlink='false'
-	_mitigate-ubcp_directory "$@"
+	"$scriptAbsoluteLocation" _mitigate-ubcp_directory "$@"
 	
 	export mitigate_ubcp_replaceSymlink='true'
-	_mitigate-ubcp_directory "$@"
+	"$scriptAbsoluteLocation" _mitigate-ubcp_directory "$@"
 }
 
 
@@ -1919,8 +2006,71 @@ _package-cygwin() {
 
 
 
+# Discouraged. Few file paths, some setup, etc, may be different. Otherwise, WSL should not be treated differently.
+_if_wsl() {
+    uname -a | grep -i 'microsoft' > /dev/null 2>&1 || uname -a | grep -i 'WSL2' > /dev/null 2>&1
+}
 
 
+
+# Ingredients. Debian pacakges mirror, docker images, pre-built dist/OS images, etc.
+_set_ingredients() {
+    export ub_INGREDIENTS=""
+
+    local currentDriveLetter
+
+    if ! _if_cygwin
+    then
+        [[ -e /mnt/ingredients/ingredients ]] && mountpoint /mnt/ingredients && export ub_INGREDIENTS=/mnt/ingredients/ingredients && return 0
+
+        # STRONGLY PREFERRED.
+        [[ -e /mnt/ingredients ]] && mountpoint /mnt/ingredients && export ub_INGREDIENTS=/mnt/ingredients && return 0
+
+        # STRONGLY DISCOURAGED.
+        # Do NOT create "$HOME"/core/ingredients unless for some very unexpected reason it is necessary for a non-root user to use ingredients.
+        [[ -e "$HOME"/core/ingredients ]] && export ub_INGREDIENTS="$HOME"/core/ingredients && return 0
+
+        # WSL(2) specific.
+        #_if_wsl
+        #uname -a | grep -i 'microsoft' > /dev/null 2>&1 || uname -a | grep -i 'WSL2' > /dev/null 2>&1
+        if type _if_wsl > /dev/null 2>&1 && _if_wsl
+        then
+            [[ -e /mnt/host/z/mnt/ingredients ]] && export ub_INGREDIENTS=/mnt/host/z/mnt/ingredients && return 0
+            [[ -e /mnt/z/mnt/ingredients ]] && export ub_INGREDIENTS=/mnt/z/mnt/ingredients && return 0
+            [[ -e /mnt/c/core/ingredients ]] && export ub_INGREDIENTS=/mnt/c/core/ingredients && return 0
+            [[ -e /mnt/host/c/core/ingredients ]] && export ub_INGREDIENTS=/mnt/host/c/core/ingredients && return 0
+            #
+            for currentDriveLetter in d e f g h i j k l m n o p q r s t u v w D E F G H I J K L M N O P Q R S T U V W
+            do
+                [[ -e /mnt/"$currentDriveLetter"/ingredients ]] && export ub_INGREDIENTS=/mnt/"$currentDriveLetter"/ingredients && return 0
+            done
+            if [[ -e /mnt/host ]]
+            then
+                for currentDriveLetter in d e f g h i j k l m n o p q r s t u v w D E F G H I J K L M N O P Q R S T U V W
+                do
+                    [[ -e /mnt/host/"$currentDriveLetter"/ingredients ]] && export ub_INGREDIENTS=/mnt/host/"$currentDriveLetter"/ingredients && return 0
+                done
+            fi
+        fi
+    fi
+
+    if _if_cygwin
+    then
+        [[ -e /cygdrive/z/mnt/ingredients ]] && export ub_INGREDIENTS=/cygdrive/z/mnt/ingredients && return 0
+        [[ -e /cygdrive/c/core/ingredients ]] && export ub_INGREDIENTS=/cygdrive/c/core/ingredients && return 0
+        #
+        for currentDriveLetter in d e f g h i j k l m n o p q r s t u v w D E F G H I J K L M N O P Q R S T U V W
+        do
+            [[ -e /cygdrive/"$currentDriveLetter"/ingredients ]] && export ub_INGREDIENTS=/cygdrive/"$currentDriveLetter"/ingredients && return 0
+        done
+    fi
+
+
+
+
+    [[ "$ub_INGREDIENTS" == "" ]] && return 1
+    return 0
+}
 
 
 
@@ -2715,6 +2865,48 @@ _command_safeBackup() {
 	! type basename > /dev/null 2>&1 && return 1
 	
 	return 0
+}
+
+
+
+
+# Suggested for files used as Inter-Process Communication (IPC) or similar indicators (eg. temporary download files recently in progress).
+# Works around files that may not be deleted by 'rm -f' when expected (ie. due to Cygwin/MSW file locking).
+# ATTRIBUTION-AI: OpRt_.deepseek/deepseek-r1-distill-llama-70b  2025-03-27  (partial)
+_destroy_lock() {
+    [[ "$1" == "" ]] && return 0
+
+    # Fraction of   2GB part file  divided by  1MB/s optical-disc write speed   .
+    local currentLockWait="1250"
+
+    local current_anyFilesExists
+    local currentFile
+    
+    
+    local currentIteration=0
+    for ((currentIteration=0; currentIteration<"$currentLockWait"; currentIteration++))
+    do
+        rm -f "$@" > /dev/null 2>&1
+
+        current_anyFilesExists="false"
+        for currentFile in "$@"
+        do
+            [[ -e "$currentFile" ]] && current_anyFilesExists="true"
+        done
+
+        if [[ "$current_anyFilesExists" == "false" ]]
+        then
+            return 0
+            break
+        fi
+
+        # DANGER: Does NOT use _safeEcho . Do NOT use with external input!
+        ( echo "STACK_FAIL STACK_FAIL STACK_FAIL: software: wait: rm: exists: file: ""$@" >&2 ) > /dev/null
+        sleep 1
+    done
+
+    [[ "$currentIteration" != "0" ]] && sleep 7
+    return 1
 }
 
 
@@ -3639,6 +3831,17 @@ _messagePlain_probe_noindent() {
 	echo
 	return 0
 }
+# WARNING: Less track record with very unusual text. May or may not output correctly in some (unknown, unexpected) situations.
+# DANGER: MUST use this function instead of _messagePlain_probe when text is from external origins!
+_messagePlain_probe_safe() {
+	_color_begin_probe
+	#_color_begin_probe_noindent
+	#echo -n "$@"
+	_safeEcho "$@"
+	_color_end
+	echo
+	return
+}
 
 #Blue. Diagnostic instrumentation.
 #"generic/ubiquitousheader.sh"
@@ -3810,6 +4013,7 @@ _messageFAIL() {
 	_messageError "FAIL"
 	#echo " FAIL "
 	_stop 1
+	exit 1
 	return 0
 }
 
@@ -5910,8 +6114,11 @@ _init_deps() {
 	
 	export enUb_dev=""
 	export enUb_dev_heavy=""
+	export enUb_dev_heavy_atom=""
 	
 	export enUb_generic=""
+
+	export enUb_dev_buildOps=""
 	
 	export enUb_cloud_heavy=""
 	
@@ -5926,15 +6133,24 @@ _init_deps() {
 	export enUb_cloud_self=""
 	export enUb_cloud_build=""
 	export enUb_notLean=""
+	export enUb_github=""
 	export enUb_distro=""
+	export enUb_getMinimal=""
+	export enUb_getMost_special_veracrypt=""
 	export enUb_build=""
 	export enUb_buildBash=""
 	export enUb_os_x11=""
 	export enUb_proxy=""
 	export enUb_proxy_special=""
+	export enUb_serial=""
 	export enUb_fw=""
 	export enUb_clog=""
 	export enUb_x11=""
+	export enUb_researchEngine=""
+	export enUb_ollama=""
+	export enUb_ai_dataset=""
+	export enUb_ai_semanticAssist=""
+	export enUb_ai_knowledge=""
 	export enUb_blockchain=""
 	export enUb_java=""
 	export enUb_image=""
@@ -5943,6 +6159,7 @@ _init_deps() {
 	export enUb_virt_thick=""
 	export enUb_virt_translation=""
 	export enUb_ChRoot=""
+	export enUb_bios=""
 	export enUb_QEMU=""
 	export enUb_vbox=""
 	export enUb_docker=""
@@ -5960,8 +6177,10 @@ _init_deps() {
 	export enUb_synergy=""
 	
 	export enUb_hardware=""
+	export enUb_measurement=""
 	export enUb_enUb_x220t=""
 	export enUb_enUb_w540=""
+	export enUb_enUb_gpd=""
 	export enUb_enUb_peripherial=""
 	
 	export enUb_user=""
@@ -5978,6 +6197,10 @@ _init_deps() {
 	export enUb_haskell=""
 	
 	export enUb_calculators=""
+
+	export enUb_ai_shortcuts=""
+	export enUb_ollama_shortcuts=""
+	export enUb_factory_shortcuts=""
 }
 
 _deps_generic() {
@@ -5993,6 +6216,18 @@ _deps_dev() {
 _deps_dev_heavy() {
 	_deps_notLean
 	export enUb_dev_heavy="true"
+}
+
+_deps_dev_heavy_atom() {
+	_deps_notLean
+	export enUb_dev_heavy="true"
+	export enUb_dev_heavy_atom="true"
+}
+
+_deps_dev_buildOps() {
+	_deps_generic
+	
+	export enUb_dev_buildOps="true"
 }
 
 _deps_cloud_heavy() {
@@ -6035,6 +6270,7 @@ _deps_search() {
 _deps_cloud() {
 	_deps_repo
 	_deps_proxy
+	_deps_serial
 	_deps_stopwatch
 	
 	_deps_fakehome
@@ -6102,6 +6338,12 @@ _deps_proxy_special() {
 	export enUb_proxy_special="true"
 }
 
+_deps_serial() {
+	_deps_notLean
+	
+	export enUb_serial="true"
+}
+
 _deps_fw() {
 	export enUb_fw="true"
 }
@@ -6114,6 +6356,24 @@ _deps_x11() {
 	_deps_build
 	_deps_notLean
 	export enUb_x11="true"
+}
+
+_deps_ai() {
+	_deps_notLean
+	export enUb_researchEngine="true"
+	export enUb_ollama="true"
+}
+_deps_ai_dataset() {
+	_deps_ai
+	_deps_ai_shortcuts
+	export enUb_ai_dataset="true"
+}
+_deps_ai_semanticAssist() {
+	_deps_ai_dataset
+	export enUb_ai_semanticAssist="true"
+}
+_deps_ai_knowledge() {
+	export enUb_ai_knowledge="true"
 }
 
 _deps_blockchain() {
@@ -6256,6 +6516,7 @@ _deps_command() {
 	_deps_os_x11
 	_deps_proxy
 	_deps_proxy_special
+	_deps_serial
 	
 	export enUb_command="true"
 }
@@ -6270,6 +6531,11 @@ _deps_hardware() {
 	export enUb_hardware="true"
 }
 
+_deps_measurement() {
+	_deps_hardware
+	export enUb_measurement="true"
+}
+
 _deps_x220t() {
 	_deps_notLean
 	_deps_hardware
@@ -6280,6 +6546,12 @@ _deps_w540() {
 	_deps_notLean
 	_deps_hardware
 	export enUb_w540="true"
+}
+
+_deps_gpd() {
+	_deps_notLean
+	_deps_hardware
+	export enUb_gpd="true"
 }
 
 _deps_peripherial() {
@@ -6323,6 +6595,19 @@ _deps_calculators() {
 	_deps_generic
 	
 	export enUb_calculators="true"
+}
+
+_deps_ai_shortcuts() {
+	_deps_generic
+	
+	export enUb_ai_shortcuts="true"
+	export enUb_ollama_shortcuts="true"
+}
+
+_deps_factory_shortcuts() {
+	_deps_generic
+	
+	export enUb_factory_shortcuts="true"
 }
 
 #placeholder, define under "queue/build"
@@ -6875,9 +7160,15 @@ _compile_bash_deps() {
 	
 	if [[ "$1" == "lean" ]]
 	then
+		_deps_dev_buildOps
+		
 		#_deps_git
 		
 		#_deps_virt_translation
+		
+		# Serial depends on '_getMost_backend', which explicitly requires only 'notLean' .
+		#_deps_notLean
+		#_deps_serial
 		
 		_deps_stopwatch
 		
@@ -6889,7 +7180,12 @@ _compile_bash_deps() {
 	# Specifically intended to be imported into user profile.
 	if [[ "$1" == "ubcore" ]]
 	then
+		_deps_dev_buildOps
+		
 		_deps_notLean
+		_deps_os_x11
+		
+		_deps_serial
 
 		_deps_fw
 		
@@ -6921,13 +7217,25 @@ _compile_bash_deps() {
 		_deps_linux
 		
 		_deps_hardware
+		_deps_measurement
 		_deps_x220t
 		_deps_w540
+		_deps_gpd
 		
 		_deps_generic
 		
 		_deps_python
 		_deps_haskell
+		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
+
+		_deps_factory_shortcuts
 		
 		_deps_calculators
 		
@@ -6941,9 +7249,13 @@ _compile_bash_deps() {
 	
 	if [[ "$1" == "cautossh" ]]
 	then
+		_deps_dev_buildOps
+		
 		_deps_os_x11
 		_deps_proxy
 		_deps_proxy_special
+
+		_deps_serial
 
 		_deps_fw
 		
@@ -6980,11 +7292,22 @@ _compile_bash_deps() {
 	if [[ "$1" == "processor" ]]
 	then
 		_deps_dev
+		_deps_dev_buildOps
 		
 		_deps_generic
 		
 		_deps_python
 		_deps_haskell
+		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
+
+		_deps_factory_shortcuts
 		
 		_deps_calculators
 		
@@ -6992,6 +7315,8 @@ _compile_bash_deps() {
 		
 		_deps_queue
 		_deps_metaengine
+		
+		_deps_serial
 		
 		_deps_stopwatch
 		
@@ -7001,9 +7326,18 @@ _compile_bash_deps() {
 	if [[ "$1" == "abstract" ]] || [[ "$1" == "abstractfs" ]]
 	then
 		_deps_dev
+		_deps_dev_buildOps
 		
 		_deps_python
 		_deps_haskell
+		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
 		
 		_deps_calculators
 		
@@ -7014,6 +7348,8 @@ _compile_bash_deps() {
 		
 		_deps_abstractfs
 		
+		_deps_serial
+		
 		_deps_stopwatch
 		
 		return 0
@@ -7023,9 +7359,18 @@ _compile_bash_deps() {
 	if [[ "$1" == "fakehome" ]]
 	then
 		_deps_dev
+		_deps_dev_buildOps
 		
 		_deps_python
 		_deps_haskell
+		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
 		
 		_deps_calculators
 		
@@ -7037,6 +7382,8 @@ _compile_bash_deps() {
 		_deps_fakehome
 		_deps_abstractfs
 		
+		_deps_serial
+		
 		_deps_stopwatch
 		
 		return 0
@@ -7045,7 +7392,9 @@ _compile_bash_deps() {
 	if [[ "$1" == "monolithic" ]]
 	then
 		_deps_dev_heavy
+		#_deps_dev_heavy_atom
 		_deps_dev
+		_deps_dev_buildOps
 		
 		#_deps_cloud_heavy
 		
@@ -7083,6 +7432,16 @@ _compile_bash_deps() {
 		_deps_python
 		_deps_haskell
 		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
+
+		_deps_factory_shortcuts
+		
 		_deps_calculators
 		
 		_deps_channel
@@ -7112,14 +7471,17 @@ _compile_bash_deps() {
 		#_deps_synergy
 		
 		#_deps_hardware
+		#_deps_measurement
 		#_deps_x220t
 		#_deps_w540
+		#_deps_gpd
 		#_deps_peripherial
 		
 		#_deps_user
 		
 		#_deps_proxy
 		#_deps_proxy_special
+		_deps_serial
 
 		_deps_fw
 		
@@ -7143,7 +7505,9 @@ _compile_bash_deps() {
 	if [[ "$1" == "core" ]]
 	then
 		_deps_dev_heavy
+		#_deps_dev_heavy_atom
 		_deps_dev
+		_deps_dev_buildOps
 		
 		#_deps_cloud_heavy
 		
@@ -7181,6 +7545,16 @@ _compile_bash_deps() {
 		_deps_python
 		_deps_haskell
 		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
+
+		_deps_factory_shortcuts
+		
 		_deps_calculators
 		
 		_deps_channel
@@ -7210,14 +7584,17 @@ _compile_bash_deps() {
 		#_deps_synergy
 		
 		#_deps_hardware
+		#_deps_measurement
 		#_deps_x220t
 		#_deps_w540
+		#_deps_gpd
 		#_deps_peripherial
 		
 		#_deps_user
 		
 		#_deps_proxy
 		#_deps_proxy_special
+		_deps_serial
 
 		_deps_fw
 		
@@ -7237,11 +7614,28 @@ _compile_bash_deps() {
 		
 		return 0
 	fi
+
+	# In practice, 'core' now includes '_deps_ai' by default to support '_deps_ai_dataset' .
+	if [[ "$1" == "core_ai" ]]
+	then
+		_deps_ai
+		_deps_ai_shortcuts
+		_compile_bash_deps 'core'
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
+
+		_deps_factory_shortcuts
+	fi
 	
 	if [[ "$1" == "" ]] || [[ "$1" == "ubiquitous_bash" ]] || [[ "$1" == "ubiquitous_bash.sh" ]] || [[ "$1" == "complete" ]]
 	then
 		_deps_dev_heavy
+		#_deps_dev_heavy_atom
 		_deps_dev
+		_deps_dev_buildOps
 		
 		_deps_cloud_heavy
 		
@@ -7279,6 +7673,16 @@ _compile_bash_deps() {
 		_deps_python
 		_deps_haskell
 		
+		_deps_ai
+		_deps_ai_shortcuts
+
+		#_deps_ai
+		_deps_ai_dataset
+		_deps_ai_semanticAssist
+		_deps_ai_knowledge
+
+		_deps_factory_shortcuts
+		
 		_deps_calculators
 		
 		_deps_channel
@@ -7308,14 +7712,17 @@ _compile_bash_deps() {
 		_deps_synergy
 		
 		_deps_hardware
+		_deps_measurement
 		_deps_x220t
 		_deps_w540
+		_deps_gpd
 		_deps_peripherial
 		
 		_deps_user
 		
 		_deps_proxy
 		_deps_proxy_special
+		_deps_serial
 
 		_deps_fw
 		
@@ -7358,6 +7765,9 @@ _compile_bash_header() {
 	includeScriptList+=( "os/override"/override_prog.sh )
 	
 	includeScriptList+=( "os/override"/override_cygwin.sh )
+	includeScriptList+=( "os/override"/override_wsl.sh )
+
+	includeScriptList+=( "special"/ingredients.sh )
 }
 
 _compile_bash_header_program() {
@@ -7373,6 +7783,7 @@ _compile_bash_essential_utilities() {
 	includeScriptList+=( "labels"/utilitiesLabel.sh )
 	includeScriptList+=( "generic/filesystem"/absolutepaths.sh )
 	includeScriptList+=( "generic/filesystem"/safedelete.sh )
+	includeScriptList+=( "generic/filesystem"/destroylock.sh )
 	includeScriptList+=( "generic/filesystem"/moveconfirm.sh )
 	includeScriptList+=( "generic/filesystem"/allLogic.sh )
 	includeScriptList+=( "generic/process"/timeout.sh )
@@ -7449,6 +7860,10 @@ _compile_bash_utilities() {
 	
 	[[ "$enUb_proxy" == "true" ]] && includeScriptList+=( "generic/net/proxy/proxyrouter"/here_proxyrouter.sh )
 	[[ "$enUb_proxy" == "true" ]] && includeScriptList+=( "generic/net/proxy/proxyrouter"/proxyrouter.sh )
+
+	[[ "$enUb_serial" == "true" ]] && includeScriptList+=( "generic/serial"/forwardPort.sh )
+	[[ "$enUb_serial" == "true" ]] && includeScriptList+=( "generic/serial"/forwardPort-service.sh )
+	[[ "$enUb_serial" == "true" ]] && includeScriptList+=( "generic/serial"/terminal.sh )
 	
 	[[ "$enUb_fw" == "true" ]] && includeScriptList+=( "generic/net/fw"/fw.sh )
 	[[ "$enUb_fw" == "true" ]] && includeScriptList+=( "generic/net/fw"/hosts.sh )
@@ -7483,6 +7898,10 @@ _compile_bash_utilities() {
 	( [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_getMinimal" == "true" ]] || [[ "$enUb_cloud_heavy" == "true" ]] || [[ "$enUb_cloud" == "true" ]] || [[ "$enUb_distro" == "true" ]] ) && includeScriptList+=( "os"/nixos.sh )
 	
 	
+	
+	[[ "$enUb_notLean" == "true" ]] && includeScriptList+=( "os/distro/cygwin"/getMost_cygwin.sh )
+
+
 	
 	[[ "$enUb_notLean" == "true" ]] && includeScriptList+=( "os/unix/systemd"/here_systemd.sh )
 	[[ "$enUb_notLean" == "true" ]] && includeScriptList+=( "os/unix/systemd"/hook_systemd.sh )
@@ -7553,6 +7972,8 @@ _compile_bash_utilities_virtualization() {
 	[[ "$enUb_ChRoot" == "true" ]] && includeScriptList+=( "virtualization/chroot"/userchroot.sh )
 	[[ "$enUb_ChRoot" == "true" ]] && includeScriptList+=( "virtualization/chroot"/dropchroot.sh )
 	
+	[[ "$enUb_ChRoot" == "true" ]] && includeScriptList+=( "virtualization/chroot"/ubdistchroot.sh )
+	
 	[[ "$enUb_bios" == "true" ]] && includeScriptList+=( "virtualization/bios"/createvm.sh )
 	[[ "$enUb_bios" == "true" ]] && includeScriptList+=( "virtualization/bios"/live.sh )
 	
@@ -7602,6 +8023,33 @@ _compile_bash_shortcuts() {
 	
 	includeScriptList+=( "shortcuts/prompt"/visualPrompt.sh )
 	
+	
+	[[ "$enUb_researchEngine" == "true" ]] && includeScriptList+=( "ai"/researchEngine.sh )
+	
+	[[ "$enUb_ollama" == "true" ]] && includeScriptList+=( "ai/ollama"/ollama.sh )
+	
+	( ( [[ "$enUb_dev_heavy" == "true" ]] ) || [[ "$enUb_ollama_shortcuts" == "true" ]] ) && includeScriptList+=( "shortcuts/ai/ollama"/ollama.sh )
+
+	[[ "$enUb_factory_shortcuts" ]] && includeScriptList+=( "shortcuts/factory"/factoryCreate.sh )
+	[[ "$enUb_factory_shortcuts" ]] && includeScriptList+=( "shortcuts/factory"/factory.sh )
+	
+
+	[[ "$enUb_ai_dataset" == "true" ]] && includeScriptList+=( "ai/dataset"/format.sh )
+	( [[ "$enUb_ai_dataset" == "true" ]] || [[ "$enUb_ai_shortcuts" == "true" ]] ) && includeScriptList+=( "ai/dataset"/format-special.sh )
+
+	[[ "$enUb_ai_dataset" == "true" ]] && includeScriptList+=( "ai/dataset"/here_convert.sh )
+	[[ "$enUb_ai_dataset" == "true" ]] && includeScriptList+=( "ai/dataset"/convert.sh )
+
+	[[ "$enUb_ai_dataset" == "true" ]] && includeScriptList+=( "ai/dataset"/corpus_bash.sh )
+	[[ "$enUb_ai_dataset" == "true" ]] && includeScriptList+=( "ai/dataset"/corpus.sh )
+
+	[[ "$enUb_ai_semanticAssist" == "true" ]] && includeScriptList+=( "ai/semanticAssist"/here_semanticAssist.sh )
+	[[ "$enUb_ai_semanticAssist" == "true" ]] && includeScriptList+=( "ai/semanticAssist"/distill_semanticAssist.sh )
+	[[ "$enUb_ai_semanticAssist" == "true" ]] && includeScriptList+=( "ai/semanticAssist"/semanticAssist_bash.sh )
+	[[ "$enUb_ai_semanticAssist" == "true" ]] && includeScriptList+=( "ai/semanticAssist"/semanticAssist.sh )
+
+	[[ "$enUb_ai_knowledge" == "true" ]] && includeScriptList+=( "ai"/knowledge.sh )
+	
 	#[[ "$enUb_dev_heavy" == "true" ]] && 
 	includeScriptList+=( "shortcuts/dev"/devsearch.sh )
 	
@@ -7612,7 +8060,7 @@ _compile_bash_shortcuts() {
 	( ( [[ "$enUb_dev_heavy" == "true" ]] || [[ "$enUb_metaengine" == "true" ]] ) || [[ "$enUb_calculators" == "true" ]] ) && includeScriptList+=( "shortcuts/dev/app/calculators"/scriptedIllustrator_terminal.sh )
 	
 	[[ "$enUb_fakehome" == "true" ]] && [[ "$enUb_dev_heavy" == "true" ]] && includeScriptList+=( "shortcuts/dev/app"/devemacs.sh )
-	[[ "$enUb_fakehome" == "true" ]] && [[ "$enUb_dev_heavy" == "true" ]] && includeScriptList+=( "shortcuts/dev/app"/devatom.sh )
+	[[ "$enUb_fakehome" == "true" ]] && [[ "$enUb_dev_heavy" == "true" ]] && [[ "$enUb_dev_heavy_atom" == "true" ]] && includeScriptList+=( "shortcuts/dev/app"/devatom.sh )
 	
 	[[ "$enUb_fakehome" == "true" ]] && [[ "$enUb_abstractfs" == "true" ]] && [[ "$enUb_dev_heavy" == "true" ]] && includeScriptList+=( "shortcuts/dev/app/eclipse"/deveclipse_java.sh )
 	[[ "$enUb_fakehome" == "true" ]] && [[ "$enUb_abstractfs" == "true" ]] && [[ "$enUb_dev_heavy" == "true" ]] && includeScriptList+=( "shortcuts/dev/app/eclipse"/deveclipse_env.sh )
@@ -7631,6 +8079,7 @@ _compile_bash_shortcuts() {
 	[[ "$enUb_dev" == "true" ]] && includeScriptList+=( "shortcuts/dev/scope"/devscope_app.sh )
 
 	( [[ "$enUb_github" == "true" ]] || [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_cloud" == "true" ]] || [[ "$enUb_cloud_heavy" == "true" ]] || [[ "$enUb_cloud_self" == "true" ]] ) && includeScriptList+=( "shortcuts/github"/github_removeHTTPS.sh )
+	( [[ "$enUb_github" == "true" ]] || [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_cloud" == "true" ]] || [[ "$enUb_cloud_heavy" == "true" ]] || [[ "$enUb_cloud_self" == "true" ]] ) && includeScriptList+=( "shortcuts/github"/github_upload_parts.sh )
 	
 	( [[ "$enUb_repo" == "true" ]] && [[ "$enUb_git" == "true" ]] ) && includeScriptList+=( "shortcuts/git"/git.sh )
 	( [[ "$enUb_repo" == "true" ]] && [[ "$enUb_git" == "true" ]] ) && includeScriptList+=( "shortcuts/git"/gitBare.sh )
@@ -7639,12 +8088,19 @@ _compile_bash_shortcuts() {
 
 	includeScriptList+=( "shortcuts/git"/gitBest.sh )
 	includeScriptList+=( "shortcuts/git"/wget_githubRelease_internal.sh )
+	( [[ "$enUb_github" == "true" ]] || [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_cloud" == "true" ]] || [[ "$enUb_cloud_heavy" == "true" ]] || [[ "$enUb_cloud_self" == "true" ]] ) && includeScriptList+=( "shortcuts/git"/wget_githubRelease_tag.sh )
+
+	( [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_dev_heavy" == "true" ]] || [[ "$enUb_repo" == "true" ]] || [[ "$enUb_github" == "true" ]] || [[ "$enUb_cloud" == "true" ]] || [[ "$enUb_cloud_heavy" == "true" ]] || [[ "$enUb_cloud_self" == "true" ]] ) && includeScriptList+=( "shortcuts"/remoteShortcuts.sh )
+
+
+	( [[ "$enUb_github" == "true" ]] || [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_cloud" == "true" ]] || [[ "$enUb_cloud_heavy" == "true" ]] || [[ "$enUb_cloud_self" == "true" ]] ) && includeScriptList+=( "shortcuts/git"/gitCompendium.sh )
 	
 	[[ "$enUb_bup" == "true" ]] && includeScriptList+=( "shortcuts/bup"/bup.sh )
 	
 	
 	( [[ "$enUb_dev_heavy" == "true" ]] || [[ "$enUb_repo" == "true" ]] || [[ "$enUb_cloud" == "true" ]] ) && includeScriptList+=( "shortcuts/dev/app/repo/mktorrent"/mktorrent.sh )
 	( [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_dev" == "true" ]] || [[ "$enUb_dev_heavy" == "true" ]] || [[ "$enUb_image" == "true" ]] || [[ "$enUb_repo" == "true" ]] || [[ "$enUb_cloud" == "true" ]] ) && includeScriptList+=( "shortcuts/dev/app/repo/disk"/dd.sh )
+	( [[ "$enUb_notLean" == "true" ]] || [[ "$enUb_dev" == "true" ]] || [[ "$enUb_dev_heavy" == "true" ]] || [[ "$enUb_image" == "true" ]] || [[ "$enUb_repo" == "true" ]] || [[ "$enUb_cloud" == "true" ]] ) && includeScriptList+=( "shortcuts/dev/app/repo/disc"/growisofs.sh )
 	
 	
 	( [[ "$enUb_dev_heavy" == "true" ]] || [[ "$enUb_search" == "true" ]] ) && includeScriptList+=( "shortcuts/dev/app/search"/search.sh )
@@ -7783,6 +8239,10 @@ _compile_bash_hardware() {
 	[[ "$enUb_hardware" == "true" ]] && [[ "$enUb_w540" == "true" ]] && includeScriptList+=( "hardware/w540"/w540_fan.sh )
 	
 	[[ "$enUb_hardware" == "true" ]] && [[ "$enUb_peripherial" == "true" ]] && includeScriptList+=( "hardware/peripherial/h1060p"/h1060p.sh )
+	
+	[[ "$enUb_hardware" == "true" ]] && [[ "$enUb_gpd" == "true" ]] && includeScriptList+=( "hardware/gpdWinMini2024_8840U"/gpdWinMini2024_8840U_fan.sh )
+
+	( [[ "$enUb_hardware" == "true" ]] || [[ "$enUb_measurement" == "true" ]] ) && includeScriptList+=( "hardware/measurement"/live_hash.sh )
 }
 
 _compile_bash_vars_basic() {
@@ -7919,6 +8379,7 @@ _compile_bash_selfHost() {
 _compile_bash_overrides() {
 	export includeScriptList
 	
+	[[ "$enUb_dev_buildOps" == "true" ]] && includeScriptList+=( "build/zSpecial"/build-ops.sh )
 	
 	includeScriptList+=( "structure"/overrides.sh )
 }
@@ -8083,11 +8544,14 @@ _compile_bash() {
 		includeScriptList+=( "generic"/rottenheader.sh )
 		#includeScriptList+=( "generic"/minimalheader.sh )
 		#includeScriptList+=( "generic"/ubiquitousheader.sh )
+
+		includeScriptList+=( "special"/ingredients.sh )
 		
 		#includeScriptList+=( "os/override"/override.sh )
 		#includeScriptList+=( "os/override"/override_prog.sh )
 		
 		#includeScriptList+=( "os/override"/override_cygwin.sh )
+		#includeScriptList+=( "os/override"/override_wsl.sh )
 		
 		
 		
@@ -8095,6 +8559,7 @@ _compile_bash() {
 		includeScriptList+=( "labels"/utilitiesLabel.sh )
 		includeScriptList+=( "generic/filesystem"/absolutepaths.sh )
 		includeScriptList+=( "generic/filesystem"/safedelete.sh )
+		includeScriptList+=( "generic/filesystem"/destroylock.sh )
 		includeScriptList+=( "generic/filesystem"/moveconfirm.sh )
 		includeScriptList+=( "generic/filesystem"/allLogic.sh )
 		includeScriptList+=( "generic/process"/timeout.sh )
@@ -8566,6 +9031,12 @@ fi
 # DANGER: Implemented to prevent 'compile.sh' from attempting to run functions from 'ops.sh'. No other valid use currently known or anticipated!
 if [[ "$ub_ops_disable" != 'true' ]]
 then
+	# WARNING: CAUTION: Use sparingly and carefully . Allows a user to globally override functions for all 'ubiquitous_bash' scripts, projects, etc.
+	if [[ -e "$HOME"/_bashrc ]]
+	then
+		. "$HOME"/_bashrc
+	fi
+	
 	#Override functions with external definitions from a separate file if available.
 	#if [[ -e "./ops" ]]
 	#then
@@ -8615,6 +9086,33 @@ then
 		. "$scriptLocal"/ssh/opsauto
 	fi
 fi
+
+
+# ATTENTION: May be redundantly redefined (ie. overloaded) if appropriate (eg. for use outside a 'ubiquitous_bash' environment).
+_backend_override() {
+	! type -f _backend > /dev/null 2>&1 && _backend() { "$@" ; unset -f _backend ; }
+	_backend "$@"
+}
+## ...
+## EXAMPLE
+#! _openChRoot && _messageFAIL
+## ...
+#_backend() { _ubdistChRoot "$@" ; }
+#_backend_override echo test
+#unset -f _backend
+## ...
+#! _closeChRoot && _messageFAIL
+## ...
+## EXAMPLE
+#_ubdistChRoot_backend_begin
+#_backend_override echo test
+#_ubdistChRoot_backend_end
+## ...
+## EXAMPLE
+#_experiment() { _backend_override echo test ; }
+#_ubdistChRoot_backend _experiment
+
+
 
 #wsl '~/.ubcore/ubiquitous_bash/ubiquitous_bash.sh' '_wrap' kwrite './gpl-3.0.txt'
 #wsl '~/.ubcore/ubiquitous_bash/ubiquitous_bash.sh' '_wrap' ldesk
@@ -8731,7 +9229,18 @@ _python() {
 _sudo() {
 	_safe_declare_uid
 	
-	sudo -n "$scriptAbsoluteLocation" _bin "$@"
+	if ! _if_cygwin
+	then
+		sudo -n "$scriptAbsoluteLocation" _bin "$@"
+		return
+	fi
+	if _if_cygwin
+	then
+		_sudo_cygwin "$@"
+		return
+	fi
+	
+	return 1
 }
 
 _true() {
