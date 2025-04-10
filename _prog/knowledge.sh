@@ -20,6 +20,8 @@ _knowledge-coreoracle() {
     #cp -r "$scriptAbsoluteFolder"/_lib/_build-staging-ops.sh "$scriptLocal"/knowledge/coreoracle/_lib/
 
     cp -r "$scriptAbsoluteFolder"/_prog "$scriptLocal"/knowledge/coreoracle/
+    rm -f "$scriptLocal"/knowledge/coreoracle/_prog/notices/_gather.sh
+
     #cp -r "$scriptAbsoluteFolder"/_prog-ops "$scriptLocal"/knowledge/coreoracle/
 
     #cp -r "$scriptAbsoluteFolder"/.devops "$scriptLocal"/knowledge/coreoracle/
