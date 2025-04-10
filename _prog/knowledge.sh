@@ -8,6 +8,12 @@ _knowledge-coreoracle() {
     mkdir -p "$scriptLocal"/knowledge/coreoracle
 
 
+    mkdir -p "$scriptLocal"/knowledge/coreoracle/_local
+    cp -r "$scriptAbsoluteFolder"/_local/ops.sh "$scriptLocal"/knowledge/coreoracle/_local/
+    cp -r "$scriptAbsoluteFolder"/fork "$scriptLocal"/knowledge/coreoracle/
+    cp -r "$scriptAbsoluteFolder"/upgrade "$scriptLocal"/knowledge/coreoracle/
+
+
     mkdir -p "$scriptLocal"/knowledge/coreoracle/_lib
     #cp -r "$scriptAbsoluteFolder"/_lib/... "$scriptLocal"/knowledge/coreoracle/_lib/
 
